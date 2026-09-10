@@ -1,0 +1,45 @@
+/* docs/design/COMPONENT_SPECIFICATION.md — Buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  min-height: 44px;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.primary {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.primary:hover,
+.primary:focus-visible {
+  background: var(--gate-2);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--line);
+}
+
+.secondary:hover,
+.secondary:focus-visible {
+  border-color: var(--paper);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

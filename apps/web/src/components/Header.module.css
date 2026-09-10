@@ -1,0 +1,83 @@
+.header {
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  z-index: 50;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+/* Desktop nav — hidden below 640px per docs/frontend/PERFORMANCE_STRATEGY.md
+   and docs/design/RESPONSIVE_RULES.md's mobile-first breakpoint rules. */
+.desktopNav {
+  display: none;
+  gap: var(--space-6);
+  list-style: none;
+}
+
+.desktopNav a {
+  font-size: 15px;
+  text-decoration: none;
+  color: var(--paper-dim);
+  padding: var(--space-2) 0;
+}
+
+.desktopNav a:hover,
+.desktopNav a:focus-visible {
+  color: var(--paper);
+}
+
+.menuButton {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--paper);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .desktopNav {
+    display: flex;
+  }
+  .menuButton {
+    display: none;
+  }
+}
+
+.mobileNav {
+  list-style: none;
+  padding-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mobileNav a {
+  display: block;
+  padding: var(--space-3) 0;
+  text-decoration: none;
+  color: var(--paper);
+  font-size: 16px;
+  border-top: 1px solid var(--line);
+}
