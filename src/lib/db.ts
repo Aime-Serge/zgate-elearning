@@ -5,6 +5,7 @@
  */
 import { Kysely, PostgresDialect, type Generated, type ColumnType } from "kysely";
 import { Pool } from "pg";
+import { getDatabaseUrl } from "./config.js";
 
 export type UserRole = "client" | "staff_advisory" | "staff_marketing" | "admin";
 export type Division = "advisory" | "academy" | "tech" | "data";
@@ -108,16 +109,8 @@ let instance: Kysely<Database> | undefined;
 export function getDb(): Kysely<Database> {
   instance ??= new Kysely<Database>({
     dialect: new PostgresDialect({
-      pool: new Pool({ connectionString: requireDatabaseUrl() }),
+      pool: new Pool({ connectionString: getDatabaseUrl() }),
     }),
   });
   return instance;
-}
-
-function requireDatabaseUrl(): string {
-  const url = process.env["DATABASE_URL"];
-  if (!url) {
-    throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill in a real value.");
-  }
-  return url;
 }
