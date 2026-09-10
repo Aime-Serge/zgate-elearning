@@ -5,10 +5,12 @@
  */
 import Fastify, { type FastifyInstance, type FastifyError } from "fastify";
 import cors from "@fastify/cors";
+import secureSession from "@fastify/secure-session";
 import { getHealthStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
-import { config } from "./lib/config.js";
+import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
 import { registerCrmRoutes } from "./modules/crm/routes.js";
+import { registerIdentityRoutes } from "./modules/identity/routes.js";
 
 export function build(): FastifyInstance {
   const app = Fastify({
@@ -38,6 +40,27 @@ export function build(): FastifyInstance {
   // extends here).
   void app.register(cors, {
     origin: config.WEB_ORIGIN,
+    // The session cookie must be allowed to cross the frontend/backend
+    // origin boundary, or every authenticated request would be rejected
+    // by the browser itself before it even reaches our own auth checks.
+    credentials: true,
+  });
+
+  // Self-hosted, stateless encrypted-cookie sessions - no separate
+  // session-store table (docs/architecture/ADR/ADR-005-self-hosted-auth.md).
+  void app.register(secureSession, {
+    secret: getSessionSecret(),
+    salt: getSessionSalt(),
+    cookie: {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      // Secure cookies require HTTPS - only enforced once NODE_ENV is
+      // production (ADR-004's hosting decision, still open, will
+      // terminate TLS); local dev over plain HTTP would otherwise
+      // silently never set the cookie at all.
+      secure: config.NODE_ENV === "production",
+    },
   });
 
   app.setErrorHandler((error: FastifyError | AppError, request, reply) => {
@@ -85,6 +108,7 @@ export function build(): FastifyInstance {
 
   app.get("/api/health", () => getHealthStatus());
 
+  registerIdentityRoutes(app);
   registerCrmRoutes(app);
 
   return app;

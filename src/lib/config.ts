@@ -54,3 +54,49 @@ export function getDatabaseUrl(): string {
   }
   return url;
 }
+
+// Obviously-fake, fixed values used ONLY when process.env.VITEST is set
+// (the same signal app.ts already branches on for quiet test logging) -
+// see the comment on getSessionSecret() below for why this exists.
+const TEST_ONLY_SESSION_SECRET = "test-only-session-secret-do-not-use-in-prod";
+const TEST_ONLY_SESSION_SALT = "test-only-salt16";
+
+/**
+ * Unlike getDatabaseUrl(), this can't stay purely lazy in the same sense:
+ * @fastify/secure-session needs its key at *registration* time, so every
+ * call to build() - including tests that never touch a single auth
+ * route - requires this to resolve to something. Reusing app.ts's
+ * existing VITEST-branch pattern rather than inventing a new one: under
+ * Vitest, return a fixed, clearly-fake value (test sessions are never
+ * shared with a real deployment, and encryption strength doesn't matter
+ * for a value nothing real is ever encrypted under); under real
+ * dev/production, require a real one exactly as before. Getting this
+ * wrong was caught by actually running the full suite after wiring
+ * secure-session in - every previously-passing test that has nothing to
+ * do with auth started failing until this fix.
+ */
+export function getSessionSecret(): string {
+  if (process.env["VITEST"]) {
+    return TEST_ONLY_SESSION_SECRET;
+  }
+  const secret = process.env["SESSION_SECRET"];
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "SESSION_SECRET is not set or is shorter than 32 characters. Copy .env.example to .env and fill in a real value.",
+    );
+  }
+  return secret;
+}
+
+export function getSessionSalt(): string {
+  if (process.env["VITEST"]) {
+    return TEST_ONLY_SESSION_SALT;
+  }
+  const salt = process.env["SESSION_SALT"];
+  if (!salt || salt.length !== 16) {
+    throw new Error(
+      "SESSION_SALT is not set or is not exactly 16 characters. Copy .env.example to .env and fill in a real value.",
+    );
+  }
+  return salt;
+}
