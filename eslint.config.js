@@ -4,7 +4,11 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    // apps/web is a separate package with its own eslint.config.mjs and
+    // its own `npm run lint` (docs/frontend/FRONTEND_ARCHITECTURE.md's
+    // structural decision) - this backend config has no business
+    // reaching into it, its build output, or its node_modules.
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "apps/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
