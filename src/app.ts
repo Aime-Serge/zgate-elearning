@@ -4,6 +4,7 @@
  * socket - see docs/backend/BACKEND_TESTING.md.
  */
 import Fastify, { type FastifyInstance, type FastifyError } from "fastify";
+import cors from "@fastify/cors";
 import { getHealthStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
 import { registerCrmRoutes } from "./modules/crm/routes.js";
@@ -12,6 +13,15 @@ export function build(): FastifyInstance {
   // Quiet during the test run so real assertions aren't buried under
   // request logs - still fully logged in dev/production.
   const app = Fastify({ logger: !process.env["VITEST"] });
+
+  // Frontend is a separate deployable (docs/architecture/API_ARCHITECTURE.md
+  // - "who consumes the API"), so it's a different origin even in dev -
+  // CORS is required, not optional. No wildcard: a specific, configured
+  // origin only (docs/backend/API_SECURITY.md's "no wildcard" discipline
+  // extends here). WEB_ORIGIN defaults to the frontend's dev port.
+  void app.register(cors, {
+    origin: process.env["WEB_ORIGIN"] ?? "http://localhost:3001",
+  });
 
   app.setErrorHandler((error: FastifyError | AppError, request, reply) => {
     const correlationId = request.id;
