@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Providers } from "./providers";
 import { company, elevatorPitch } from "@/lib/content";
 import "./globals.css";
 
@@ -52,9 +53,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <Header />
-        <main id="main">{children}</main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main id="main">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
