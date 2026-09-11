@@ -9,9 +9,10 @@ import secureSession from "@fastify/secure-session";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
 import helmet from "@fastify/helmet";
-import { getHealthStatus } from "./health.js";
+import { getHealthStatus, getReadinessStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
 import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
+import { getDb } from "./lib/db.js";
 import { registerCrmRoutes } from "./modules/crm/routes.js";
 import { registerIdentityRoutes } from "./modules/identity/routes.js";
 import { registerClientsRoutes } from "./modules/clients/routes.js";
@@ -181,6 +182,26 @@ export async function build(): Promise<FastifyInstance> {
   });
 
   app.get("/api/health", () => getHealthStatus());
+
+  // Readiness - distinct from liveness above (docs/devops/
+  // PRODUCTION_ARCHITECTURE.md). 503 on failure so a load balancer/
+  // orchestrator's own readiness-probe semantics work without any
+  // response-body parsing on its part.
+  app.get("/api/ready", async (request, reply) => {
+    const readiness = await getReadinessStatus(getDb);
+    if (readiness.status !== "ready") {
+      // Deliberately not awaited - reply.code() returns the Reply
+      // instance itself for chaining, and Reply is thenable (resolves
+      // once the response is actually sent). Awaiting it here deadlocks:
+      // the response can't be sent until this handler returns, and this
+      // handler can't return until the (never-resolving) await
+      // completes. Found live: curl against this exact endpoint hung
+      // indefinitely even though getReadinessStatus() itself resolved
+      // in milliseconds - docs/devops/PRODUCTION_ARCHITECTURE.md.
+      reply.code(503);
+    }
+    return readiness;
+  });
 
   registerIdentityRoutes(app);
   registerCrmRoutes(app);

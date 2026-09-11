@@ -11,6 +11,27 @@ describe("GET /api/health", () => {
   });
 });
 
+describe("GET /api/ready", () => {
+  // DB-dependent - skips cleanly without DATABASE_URL/SESSION_SECRET/
+  // SESSION_SALT locally, runs for real in CI (docs/backend/BACKEND_TESTING.md).
+  const canRun = Boolean(
+    process.env["DATABASE_URL"] && process.env["SESSION_SECRET"] && process.env["SESSION_SALT"],
+  );
+
+  it("responds ready with a 200 when the database is reachable", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+
+    const app = await build();
+    const response = await app.inject({ method: "GET", url: "/api/ready" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: "ready", checks: { database: "ok" } });
+    await app.close();
+  });
+});
+
 describe("rate limiting", () => {
   it("actually returns 429 once an endpoint's per-route limit is exceeded", async () => {
     // Regression test for a real bug found by live testing: registering
