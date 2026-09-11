@@ -8,13 +8,19 @@ import { AppError, validationError } from "../../lib/errors.js";
 import { logAccess } from "../../lib/audit.js";
 import { sendEmail } from "../../lib/email.js";
 import { config } from "../../lib/config.js";
+import { requireRole } from "../../lib/authz.js";
 import { getSessionUser, setSessionUser, clearSession } from "../../lib/session.js";
 import {
   loginInputSchema,
   passwordResetRequestSchema,
   passwordResetConfirmSchema,
 } from "./schema.js";
-import { verifyCredentials, requestPasswordReset, confirmPasswordReset } from "./service.js";
+import {
+  verifyCredentials,
+  requestPasswordReset,
+  confirmPasswordReset,
+  deactivateUser,
+} from "./service.js";
 
 function zodFieldErrors(
   issues: { path: PropertyKey[]; message: string }[],
@@ -158,6 +164,28 @@ export function registerIdentityRoutes(app: FastifyInstance): void {
     await logAccess(db, {
       userId: result.userId,
       action: "password_reset_completed",
+      resourceType: "user",
+      resourceId: result.userId,
+    });
+
+    await reply.send({ success: true });
+  });
+
+  // Incident containment action (docs/security/
+  // INCIDENT_RESPONSE_REQUIREMENTS.md, docs/devops/INCIDENT_RUNBOOK.md) -
+  // admin-only, audit-logged like every other access to a users row.
+  app.post<{ Params: { id: string } }>("/api/admin/users/:id/deactivate", async (request, reply) => {
+    const admin = requireRole("admin")(request);
+    const targetUserId = request.params.id;
+    if (!targetUserId) {
+      throw new AppError("VALIDATION_ERROR", "A user id is required.");
+    }
+
+    const db = getDb();
+    const result = await deactivateUser(db, targetUserId);
+    await logAccess(db, {
+      userId: admin.userId,
+      action: "deactivate_user",
       resourceType: "user",
       resourceId: result.userId,
     });

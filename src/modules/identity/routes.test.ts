@@ -102,4 +102,93 @@ describe("identity routes", () => {
       await app.close();
     }
   });
+
+  it("admin can deactivate an account, blocking future logins - incident containment", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+
+    const db = getDb();
+    const adminEmail = `admin-test-${randomUUID()}@example.com`;
+    const adminPassword = "a-real-admin-password";
+    const targetEmail = `target-test-${randomUUID()}@example.com`;
+    const targetPassword = "a-real-target-password";
+
+    const admin = await db
+      .insertInto("users")
+      .values({ email: adminEmail, password_hash: await hashPassword(adminPassword), role: "admin" })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    const target = await db
+      .insertInto("users")
+      .values({
+        email: targetEmail,
+        password_hash: await hashPassword(targetPassword),
+        role: "staff_marketing",
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const app = await build();
+    try {
+      const adminLogin = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: { email: adminEmail, password: adminPassword },
+      });
+      const adminCookie = adminLogin.cookies.find((c) => c.name === "session")?.value ?? "";
+
+      // --- non-admin can't deactivate anyone ---
+      const targetLoginBefore = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: { email: targetEmail, password: targetPassword },
+      });
+      const targetCookie = targetLoginBefore.cookies.find((c) => c.name === "session")?.value ?? "";
+      const forbidden = await app.inject({
+        method: "POST",
+        url: `/api/admin/users/${target.id}/deactivate`,
+        cookies: { session: targetCookie },
+      });
+      expect(forbidden.statusCode).toBe(403);
+
+      // --- nonexistent account -> 404, not a silent success ---
+      const notFound = await app.inject({
+        method: "POST",
+        url: `/api/admin/users/${randomUUID()}/deactivate`,
+        cookies: { session: adminCookie },
+      });
+      expect(notFound.statusCode).toBe(404);
+
+      // --- admin deactivates the real target ---
+      const deactivate = await app.inject({
+        method: "POST",
+        url: `/api/admin/users/${target.id}/deactivate`,
+        cookies: { session: adminCookie },
+      });
+      expect(deactivate.statusCode).toBe(200);
+      expect(deactivate.json()).toEqual({ success: true });
+
+      // --- deactivated account can no longer log in ---
+      const targetLoginAfter = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: { email: targetEmail, password: targetPassword },
+      });
+      expect(targetLoginAfter.statusCode).toBe(401);
+
+      // --- idempotent: deactivating again still succeeds, not an error ---
+      const deactivateAgain = await app.inject({
+        method: "POST",
+        url: `/api/admin/users/${target.id}/deactivate`,
+        cookies: { session: adminCookie },
+      });
+      expect(deactivateAgain.statusCode).toBe(200);
+    } finally {
+      await db.deleteFrom("access_log").where("user_id", "in", [admin.id, target.id]).execute();
+      await db.deleteFrom("users").where("id", "in", [admin.id, target.id]).execute();
+      await app.close();
+    }
+  });
 });

@@ -92,6 +92,46 @@ export async function requestPasswordReset(
   return { matched: true, userId: user.id, token };
 }
 
+/**
+ * Incident containment (docs/security/INCIDENT_RESPONSE_REQUIREMENTS.md's
+ * "disable a specific account... operationally possible from MVP" - the
+ * previously-missing half of that requirement; deactivated_at was
+ * already checked at login, but nothing could ever set it). Idempotent:
+ * re-deactivating an already-deactivated account succeeds rather than
+ * erroring, since an admin retrying a containment action under incident
+ * pressure should never get a confusing failure for the right outcome
+ * already being true.
+ *
+ * Does NOT invalidate a session already issued to this account - this
+ * module's sessions are stateless, signed cookies with no server-side
+ * store to revoke from (ADR-005), so an already-logged-in session for
+ * this account remains valid until it expires or SESSION_SECRET is
+ * rotated (which invalidates every session platform-wide, not just this
+ * one - docs/devops/INCIDENT_RUNBOOK.md). This blocks the account from
+ * logging in again, immediately; it is not a full "log this person out
+ * right now" control.
+ */
+export async function deactivateUser(db: Kysely<Database>, userId: string): Promise<{ userId: string }> {
+  const result = await db
+    .updateTable("users")
+    .set({ deactivated_at: new Date() })
+    .where("id", "=", userId)
+    .where("deactivated_at", "is", null)
+    .executeTakeFirst();
+
+  if (result.numUpdatedRows === 0n) {
+    const existing = await db.selectFrom("users").select("id").where("id", "=", userId).executeTakeFirst();
+    if (!existing) {
+      throw new AppError("NOT_FOUND", "No account with that id.");
+    }
+    // Row exists but the WHERE didn't match - already deactivated.
+    // Falls through as a success, per this function's idempotency
+    // contract above.
+  }
+
+  return { userId };
+}
+
 export async function confirmPasswordReset(
   db: Kysely<Database>,
   token: string,
