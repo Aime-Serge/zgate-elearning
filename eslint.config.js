@@ -1,6 +1,7 @@
 // @ts-check
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import globals from "globals";
 
 export default tseslint.config(
   {
@@ -30,11 +31,22 @@ export default tseslint.config(
     },
   },
   {
-    // Tooling configs live outside tsconfig.json's `include: ["src"]`
-    // (deliberately - see tsconfig.json), so they can't use the
-    // type-aware project service. Base recommended rules are enough for
-    // config files; they don't need type-checked linting.
-    files: ["eslint.config.js", "vitest.config.ts"],
+    // Tooling configs and deploy-time scripts live outside tsconfig.json's
+    // `include: ["src"]` (deliberately - see tsconfig.json and
+    // scripts/migrate.mjs's own "plain Node, not TypeScript" reasoning),
+    // so they can't use the type-aware project service. Base recommended
+    // rules are enough for these; they don't need type-checked linting.
+    files: ["eslint.config.js", "vitest.config.ts", "scripts/**/*.mjs"],
     extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
+    // scripts/migrate.mjs runs directly under `node`, not bundled/
+    // transpiled - it needs Node's real global namespace (process,
+    // console) declared, which the browser-oriented defaults above don't
+    // include.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
   },
 );
