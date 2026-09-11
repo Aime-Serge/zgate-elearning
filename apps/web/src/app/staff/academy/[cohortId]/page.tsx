@@ -132,7 +132,9 @@ export default function StaffCohortRosterPage() {
         </div>
       ) : null}
 
-      {rosterQuery.isError ? <Alert variant="error">We couldn&rsquo;t load the roster.</Alert> : null}
+      {rosterQuery.isError ? (
+        <Alert variant="error">We couldn&rsquo;t load the roster.</Alert>
+      ) : null}
 
       {rosterQuery.data && rosterQuery.data.roster.length === 0 ? (
         <Alert variant="info">No learners enrolled in this cohort yet.</Alert>
@@ -206,7 +208,9 @@ export default function StaffCohortRosterPage() {
                       type="button"
                       variant="secondary"
                       loading={assessMutation.isPending}
-                      onClick={() => assessMutation.mutate({ enrollmentId: entry.enrollmentId, passed: true })}
+                      onClick={() =>
+                        assessMutation.mutate({ enrollmentId: entry.enrollmentId, passed: true })
+                      }
                     >
                       Record pass
                     </Button>
@@ -214,7 +218,9 @@ export default function StaffCohortRosterPage() {
                       type="button"
                       variant="secondary"
                       loading={assessMutation.isPending}
-                      onClick={() => assessMutation.mutate({ enrollmentId: entry.enrollmentId, passed: false })}
+                      onClick={() =>
+                        assessMutation.mutate({ enrollmentId: entry.enrollmentId, passed: false })
+                      }
                     >
                       Record fail
                     </Button>

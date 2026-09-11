@@ -56,7 +56,9 @@ export default function StaffAcademyPage() {
         </div>
       ) : null}
 
-      {cohortsQuery.isError ? <Alert variant="error">We couldn&rsquo;t load your cohorts.</Alert> : null}
+      {cohortsQuery.isError ? (
+        <Alert variant="error">We couldn&rsquo;t load your cohorts.</Alert>
+      ) : null}
 
       {cohortsQuery.data && cohortsQuery.data.cohorts.length === 0 ? (
         <Alert variant="info">No cohorts assigned to you yet.</Alert>

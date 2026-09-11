@@ -303,13 +303,11 @@ export async function recordAttendance(
         recorded_by: staffUserId,
       })
       .onConflict((oc) =>
-        oc
-          .columns(["enrollment_id", "session_number"])
-          .doUpdateSet({
-            present: input.present,
-            recorded_by: staffUserId,
-            recorded_at: new Date(),
-          }),
+        oc.columns(["enrollment_id", "session_number"]).doUpdateSet({
+          present: input.present,
+          recorded_by: staffUserId,
+          recorded_at: new Date(),
+        }),
       )
       .execute();
 

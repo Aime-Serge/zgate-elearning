@@ -98,9 +98,7 @@ export function EnrollmentForm() {
           aria-invalid={errors.contact ? "true" : "false"}
           {...register("contact")}
         />
-        {errors.contact ? (
-          <span className={styles.errorText}>{errors.contact.message}</span>
-        ) : null}
+        {errors.contact ? <span className={styles.errorText}>{errors.contact.message}</span> : null}
       </div>
 
       <div className={styles.field}>
