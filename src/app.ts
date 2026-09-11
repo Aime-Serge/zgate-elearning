@@ -17,6 +17,7 @@ import { registerClientsRoutes } from "./modules/clients/routes.js";
 import { registerAdvisoryRoutes } from "./modules/advisory/routes.js";
 import { registerDocumentsRoutes } from "./modules/documents/routes.js";
 import { registerReportingRoutes } from "./modules/reporting/routes.js";
+import { registerAcademyRoutes } from "./modules/academy/routes.js";
 import { MAX_UPLOAD_SIZE_BYTES } from "./modules/documents/schema.js";
 
 export async function build(): Promise<FastifyInstance> {
@@ -159,6 +160,7 @@ export async function build(): Promise<FastifyInstance> {
   registerAdvisoryRoutes(app);
   registerDocumentsRoutes(app);
   registerReportingRoutes(app);
+  registerAcademyRoutes(app);
 
   return app;
 }

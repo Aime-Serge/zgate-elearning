@@ -7,7 +7,7 @@ import { Kysely, PostgresDialect, type Generated, type ColumnType } from "kysely
 import { Pool } from "pg";
 import { getDatabaseUrl } from "./config.js";
 
-export type UserRole = "client" | "staff_advisory" | "staff_marketing" | "admin";
+export type UserRole = "client" | "staff_advisory" | "staff_marketing" | "staff_academy" | "admin";
 export type Division = "advisory" | "academy" | "tech" | "data";
 export type LeadChannel = "website" | "whatsapp" | "facebook" | "linkedin" | "other";
 export type LeadStatus = "new" | "qualified" | "converted" | "lost";
@@ -15,6 +15,8 @@ export type ServiceSchedule = "A" | "B" | "C" | "D";
 export type EngagementStatus = "active" | "completed" | "terminated";
 export type ComplianceItemType = "close_out" | "vat_ebm_filing" | "annual_return" | "urgent_issue";
 export type DeliverableType = "report" | "filing_copy" | "other";
+export type CohortStatus = "upcoming" | "active" | "completed";
+export type EnrollmentStatus = "pending" | "confirmed" | "withdrawn";
 
 export interface UsersTable {
   id: Generated<string>;
@@ -98,6 +100,70 @@ export interface PasswordResetTokensTable {
   created_at: Generated<Date>;
 }
 
+export interface CoursesTable {
+  id: Generated<string>;
+  name: string;
+  audience: string;
+  duration: string;
+  fee: string;
+  total_sessions: number;
+  created_at: Generated<Date>;
+}
+
+export interface CohortsTable {
+  id: Generated<string>;
+  course_id: string;
+  trainer_id: string;
+  label: string;
+  starts_at: Date;
+  status: ColumnType<CohortStatus, CohortStatus | undefined, CohortStatus>;
+  created_at: Generated<Date>;
+}
+
+export interface LearnersTable {
+  id: Generated<string>;
+  name: string;
+  contact: string;
+  user_id: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface EnrollmentsTable {
+  id: Generated<string>;
+  learner_id: string;
+  cohort_id: string;
+  status: ColumnType<EnrollmentStatus, EnrollmentStatus | undefined, EnrollmentStatus>;
+  enrolled_at: Generated<Date>;
+  confirmed_at: Date | null;
+  confirmed_by: string | null;
+}
+
+export interface AttendanceRecordsTable {
+  id: Generated<string>;
+  enrollment_id: string;
+  session_number: number;
+  present: boolean;
+  recorded_at: Generated<Date>;
+  recorded_by: string;
+}
+
+export interface AssessmentsTable {
+  id: Generated<string>;
+  enrollment_id: string;
+  passed: boolean;
+  score: string | null;
+  assessed_at: Generated<Date>;
+  assessed_by: string;
+}
+
+export interface CertificatesTable {
+  id: Generated<string>;
+  enrollment_id: string;
+  file_ref: string;
+  issued_at: Generated<Date>;
+  issued_by: string;
+}
+
 export interface Database {
   users: UsersTable;
   clients: ClientsTable;
@@ -107,6 +173,13 @@ export interface Database {
   deliverables: DeliverablesTable;
   access_log: AccessLogTable;
   password_reset_tokens: PasswordResetTokensTable;
+  courses: CoursesTable;
+  cohorts: CohortsTable;
+  learners: LearnersTable;
+  enrollments: EnrollmentsTable;
+  attendance_records: AttendanceRecordsTable;
+  assessments: AssessmentsTable;
+  certificates: CertificatesTable;
 }
 
 /**
