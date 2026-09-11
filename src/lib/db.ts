@@ -192,7 +192,18 @@ let instance: Kysely<Database> | undefined;
 export function getDb(): Kysely<Database> {
   instance ??= new Kysely<Database>({
     dialect: new PostgresDialect({
-      pool: new Pool({ connectionString: getDatabaseUrl() }),
+      pool: new Pool({
+        connectionString: getDatabaseUrl(),
+        // node-postgres's own default is 0 - wait forever for a
+        // connection. Found as a real bug while manually verifying
+        // /api/ready (docs/devops/PRODUCTION_ARCHITECTURE.md): against
+        // an unreachable database, the request hung indefinitely
+        // instead of the fast 503 a readiness probe exists to give.
+        // Worse than just that one endpoint - every query anywhere in
+        // the app would hang the same way during a real database
+        // outage, exactly the moment a fast failure matters most.
+        connectionTimeoutMillis: 5000,
+      }),
     }),
   });
   return instance;
