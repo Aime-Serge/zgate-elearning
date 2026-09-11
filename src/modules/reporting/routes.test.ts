@@ -229,3 +229,164 @@ describe("GET /api/reporting/lead-pipeline", () => {
     }
   });
 });
+
+describe("GET /api/reporting/data-dictionary", () => {
+  it("rejects an unauthenticated caller", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const res = await app.inject({ method: "GET", url: "/api/reporting/data-dictionary" });
+      expect(res.statusCode).toBe(401);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects every non-admin role (vertical privilege escalation)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      for (const role of ["staff_marketing", "staff_advisory", "staff_academy"] as const) {
+        const cookie = await loginAs(app, role);
+        const res = await app.inject({
+          method: "GET",
+          url: "/api/reporting/data-dictionary",
+          cookies: { session: cookie },
+        });
+        expect(res.statusCode).toBe(403);
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("reflects the live schema and flags known-sensitive columns", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const cookie = await loginAs(app, "admin");
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reporting/data-dictionary",
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const tables = res.json<{
+        tables: { name: string; columns: { name: string; sensitive: boolean }[] }[];
+      }>().tables;
+
+      const users = tables.find((t) => t.name === "users");
+      expect(users).toBeDefined();
+      const passwordHash = users?.columns.find((c) => c.name === "password_hash");
+      expect(passwordHash?.sensitive).toBe(true);
+      const email = users?.columns.find((c) => c.name === "email");
+      expect(email?.sensitive).toBe(false);
+
+      expect(tables.some((t) => t.name === "leads")).toBe(true);
+      expect(tables.some((t) => t.name === "certificates")).toBe(true);
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe("GET /api/reporting/data-quality", () => {
+  it("rejects an unauthenticated caller", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const res = await app.inject({ method: "GET", url: "/api/reporting/data-quality" });
+      expect(res.statusCode).toBe(401);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects non-admin roles (vertical privilege escalation)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const cookie = await loginAs(app, "staff_advisory");
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reporting/data-quality",
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(403);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("counts a client with no engagement as incomplete", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      await createTestClient();
+
+      const cookie = await loginAs(app, "admin");
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reporting/data-quality",
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ clients: { withoutEngagementCount: number } }>();
+      expect(body.clients.withoutEngagementCount).toBeGreaterThanOrEqual(1);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("counts an overdue, uncompleted compliance item", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      await db
+        .insertInto("compliance_items")
+        .values({
+          engagement_id: engagementId,
+          type: "close_out",
+          due_date: new Date("2020-01-01"),
+        })
+        .execute();
+
+      const cookie = await loginAs(app, "admin");
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reporting/data-quality",
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ complianceItems: { overdueCount: number } }>();
+      expect(body.complianceItems.overdueCount).toBeGreaterThanOrEqual(1);
+    } finally {
+      await app.close();
+    }
+  });
+});

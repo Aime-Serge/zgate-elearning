@@ -106,3 +106,89 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
+
+.dataSection {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dataLede {
+  font-size: 14px;
+  color: var(--paper-dim);
+  max-width: 640px;
+}
+
+.dictionaryTitle {
+  font-family: var(--font-display);
+  font-size: 17px;
+  margin-top: var(--space-4);
+}
+
+.dictionary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tableDetails {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.tableDetails summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.columnCount {
+  color: var(--paper-dim);
+}
+
+.columnList {
+  list-style: none;
+  padding: var(--space-3) 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.columnRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 13px;
+  padding-left: var(--space-4);
+}
+
+.columnName {
+  font-family: var(--font-mono);
+}
+
+.columnType {
+  color: var(--paper-dim);
+}
+
+.columnFlag {
+  color: var(--info);
+  border: 1px solid var(--info);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-2);
+  font-size: 11px;
+}
+
+.sensitiveFlag {
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-2);
+  font-size: 11px;
+}

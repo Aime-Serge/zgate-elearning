@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/useSession";
 import { apiFetch } from "@/lib/api";
-import type { AdvisorySummary, LeadPipeline } from "@/lib/reporting";
+import type {
+  AdvisorySummary,
+  LeadPipeline,
+  DataQualitySummary,
+  DataDictionaryTable,
+} from "@/lib/reporting";
 import { StaffPortalLayout } from "@/components/StaffPortalLayout";
 import { Alert } from "@/components/Alert";
 import { Skeleton } from "@/components/Skeleton";
@@ -12,6 +17,7 @@ import styles from "./page.module.css";
 
 const ADVISORY_ROLES = ["staff_advisory", "admin"];
 const MARKETING_ROLES = ["staff_marketing", "admin"];
+const DATA_ROLES = ["admin"];
 
 export default function StaffReportingPage() {
   const router = useRouter();
@@ -20,6 +26,7 @@ export default function StaffReportingPage() {
 
   const canSeeAdvisory = !!role && ADVISORY_ROLES.includes(role);
   const canSeeMarketing = !!role && MARKETING_ROLES.includes(role);
+  const canSeeData = !!role && DATA_ROLES.includes(role);
 
   const summaryQuery = useQuery<AdvisorySummary>({
     queryKey: ["advisory-summary"],
@@ -31,6 +38,18 @@ export default function StaffReportingPage() {
     queryKey: ["lead-pipeline"],
     queryFn: () => apiFetch("/api/reporting/lead-pipeline"),
     enabled: session.isSuccess && canSeeMarketing,
+  });
+
+  const qualityQuery = useQuery<DataQualitySummary>({
+    queryKey: ["data-quality"],
+    queryFn: () => apiFetch("/api/reporting/data-quality"),
+    enabled: session.isSuccess && canSeeData,
+  });
+
+  const dictionaryQuery = useQuery<{ tables: DataDictionaryTable[] }>({
+    queryKey: ["data-dictionary"],
+    queryFn: () => apiFetch("/api/reporting/data-dictionary"),
+    enabled: session.isSuccess && canSeeData,
   });
 
   if (session.isLoading) {
@@ -166,6 +185,77 @@ export default function StaffReportingPage() {
 
       {canSeeMarketing && pipelineQuery.data && channelEntries.length === 0 ? (
         <Alert variant="info">No leads yet — numbers will appear here once some come in.</Alert>
+      ) : null}
+
+      {canSeeData ? (
+        <section className={styles.dataSection}>
+          <h2 className={styles.chartTitle}>Data quality</h2>
+          <p className={styles.dataLede}>
+            Completeness and timeliness signals over the operational data itself, computed live -
+            not a separate warehouse or stored aggregate.
+          </p>
+
+          {qualityQuery.isLoading ? (
+            <div className={styles.statGrid}>
+              <Skeleton className={styles.statSkeleton} />
+              <Skeleton className={styles.statSkeleton} />
+            </div>
+          ) : null}
+          {qualityQuery.isError ? (
+            <Alert variant="error">Couldn&rsquo;t load data quality signals.</Alert>
+          ) : null}
+          {qualityQuery.data ? (
+            <div className={styles.statGrid}>
+              <StatCard
+                label="Leads stuck in 'new' 14+ days"
+                value={String(qualityQuery.data.leads.staleNewCount)}
+              />
+              <StatCard
+                label="Clients with no engagement"
+                value={String(qualityQuery.data.clients.withoutEngagementCount)}
+              />
+              <StatCard
+                label="Overdue compliance items"
+                value={String(qualityQuery.data.complianceItems.overdueCount)}
+              />
+              <StatCard
+                label="Enrollments pending 7+ days"
+                value={String(qualityQuery.data.academyEnrollments.stalePendingCount)}
+              />
+            </div>
+          ) : null}
+
+          <h3 className={styles.dictionaryTitle}>Data dictionary</h3>
+          {dictionaryQuery.isLoading ? <Skeleton className={styles.statSkeleton} /> : null}
+          {dictionaryQuery.isError ? (
+            <Alert variant="error">Couldn&rsquo;t load the data dictionary.</Alert>
+          ) : null}
+          {dictionaryQuery.data ? (
+            <div className={styles.dictionary}>
+              {dictionaryQuery.data.tables.map((table) => (
+                <details key={table.name} className={styles.tableDetails}>
+                  <summary>
+                    {table.name} <span className={styles.columnCount}>({table.columns.length})</span>
+                  </summary>
+                  <ul className={styles.columnList}>
+                    {table.columns.map((column) => (
+                      <li key={column.name} className={styles.columnRow}>
+                        <span className={styles.columnName}>{column.name}</span>
+                        <span className={styles.columnType}>{column.dataType}</span>
+                        {column.nullable ? (
+                          <span className={styles.columnFlag}>nullable</span>
+                        ) : null}
+                        {column.sensitive ? (
+                          <span className={styles.sensitiveFlag}>sensitive</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
+            </div>
+          ) : null}
+        </section>
       ) : null}
     </StaffPortalLayout>
   );
