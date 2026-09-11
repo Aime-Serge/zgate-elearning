@@ -143,9 +143,7 @@ export default function StaffLeadsPage() {
                   <button
                     type="button"
                     className={styles.convertToggle}
-                    onClick={() =>
-                      setConvertingId(convertingId === lead.id ? null : lead.id)
-                    }
+                    onClick={() => setConvertingId(convertingId === lead.id ? null : lead.id)}
                   >
                     {convertingId === lead.id ? "Close" : "Convert"}
                   </button>
