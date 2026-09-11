@@ -75,7 +75,9 @@ export default function StaffClientsPage() {
       ) : null}
 
       {clientsQuery.data && clientsQuery.data.clients.length === 0 ? (
-        <Alert variant="info">No clients yet — they&rsquo;ll appear here once one is converted.</Alert>
+        <Alert variant="info">
+          No clients yet — they&rsquo;ll appear here once one is converted.
+        </Alert>
       ) : null}
 
       {clientsQuery.data && clientsQuery.data.clients.length > 0 ? (

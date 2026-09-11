@@ -98,7 +98,9 @@ export default function StaffClientDetailPage() {
         </div>
       ) : null}
 
-      {clientQuery.isError ? <Alert variant="error">We couldn&rsquo;t load this client.</Alert> : null}
+      {clientQuery.isError ? (
+        <Alert variant="error">We couldn&rsquo;t load this client.</Alert>
+      ) : null}
 
       {clientQuery.data ? (
         <header className={styles.header}>
@@ -119,7 +121,9 @@ export default function StaffClientDetailPage() {
           </div>
         ) : null}
 
-        {itemsQuery.isError ? <Alert variant="error">We couldn&rsquo;t load compliance items.</Alert> : null}
+        {itemsQuery.isError ? (
+          <Alert variant="error">We couldn&rsquo;t load compliance items.</Alert>
+        ) : null}
 
         {itemsQuery.data && itemsQuery.data.items.length === 0 ? (
           <Alert variant="info">No compliance items yet for this client.</Alert>
@@ -174,7 +178,9 @@ export default function StaffClientDetailPage() {
           </div>
         ) : null}
 
-        {documentsQuery.isError ? <Alert variant="error">We couldn&rsquo;t load documents.</Alert> : null}
+        {documentsQuery.isError ? (
+          <Alert variant="error">We couldn&rsquo;t load documents.</Alert>
+        ) : null}
 
         {documentsQuery.data && documentsQuery.data.documents.length === 0 ? (
           <Alert variant="info">No documents uploaded yet.</Alert>

@@ -82,7 +82,10 @@ export default function StaffReportingPage() {
             ) : null}
             {summaryQuery.data ? (
               <>
-                <StatCard label="Active clients" value={String(summaryQuery.data.activeClientCount)} />
+                <StatCard
+                  label="Active clients"
+                  value={String(summaryQuery.data.activeClientCount)}
+                />
                 <StatCard
                   label="On-time filing rate"
                   value={
