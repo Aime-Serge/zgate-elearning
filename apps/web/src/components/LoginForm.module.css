@@ -44,3 +44,9 @@
   padding: var(--space-3);
   font-size: 14px;
 }
+
+.forgotLink {
+  color: var(--paper-dim);
+  font-size: 14px;
+  text-align: center;
+}

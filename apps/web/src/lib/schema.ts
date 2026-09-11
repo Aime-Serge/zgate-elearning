@@ -60,3 +60,24 @@ export const convertLeadFormSchema = z.object({
 });
 
 export type ConvertLeadFormValues = z.infer<typeof convertLeadFormSchema>;
+
+/**
+ * Mirrors the backend's passwordResetRequestSchema
+ * (src/modules/identity/schema.ts).
+ */
+export const forgotPasswordFormSchema = z.object({
+  email: z.string().trim().min(1, "Enter your email.").email("Enter a valid email address."),
+});
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>;
+
+/**
+ * Mirrors the backend's passwordResetConfirmSchema
+ * (src/modules/identity/schema.ts) - same minimum length, so a caller
+ * finds out here, not after a round trip to the server.
+ */
+export const resetPasswordFormSchema = z.object({
+  newPassword: z.string().min(10, "Password must be at least 10 characters.").max(200),
+});
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;

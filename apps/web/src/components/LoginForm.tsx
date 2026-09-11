@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -114,6 +115,10 @@ export function LoginForm() {
       <Button type="submit" loading={isSubmitting}>
         Log in
       </Button>
+
+      <Link href="/forgot-password" className={styles.forgotLink}>
+        Forgot your password?
+      </Link>
     </form>
   );
 }
