@@ -35,7 +35,7 @@ describe("identity routes", () => {
       .returning("id")
       .executeTakeFirstOrThrow();
 
-    const app = build();
+    const app = await build();
     try {
       // --- wrong password: same generic message as a wrong email would get ---
       const wrongPassword = await app.inject({

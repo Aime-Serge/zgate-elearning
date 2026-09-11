@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
+import type { FastifyInstance } from "fastify";
 import { build } from "../../app.js";
 import { getDb } from "../../lib/db.js";
 import { hashPassword } from "../../lib/auth.js";
@@ -16,7 +17,7 @@ const createdUserIds: string[] = [];
 const createdLeadIds: string[] = [];
 const createdClientIds: string[] = [];
 
-async function loginAs(app: ReturnType<typeof build>, role: UserRole): Promise<string> {
+async function loginAs(app: FastifyInstance, role: UserRole): Promise<string> {
   if (!db) throw new Error("db not available");
   const email = `leads-test-${role}-${randomUUID()}@example.com`;
   const password = "a-real-test-password";
@@ -57,7 +58,7 @@ describe("staff-facing lead endpoints", () => {
       console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
       return;
     }
-    const app = build();
+    const app = await build();
     try {
       expect((await app.inject({ method: "GET", url: "/api/leads" })).statusCode).toBe(401);
       expect(
@@ -82,7 +83,7 @@ describe("staff-facing lead endpoints", () => {
       console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
       return;
     }
-    const app = build();
+    const app = await build();
     try {
       // POST /api/leads is staff_marketing-only - staff_advisory (a
       // real, valid staff role, just not the right one for this
@@ -135,7 +136,7 @@ describe("staff-facing lead endpoints", () => {
       console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
       return;
     }
-    const app = build();
+    const app = await build();
     try {
       const marketingCookie = await loginAs(app, "staff_marketing");
       const advisoryCookie = await loginAs(app, "staff_advisory");

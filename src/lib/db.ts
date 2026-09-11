@@ -89,6 +89,15 @@ export interface AccessLogTable {
   occurred_at: Generated<Date>;
 }
 
+export interface PasswordResetTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  token_hash: string;
+  expires_at: Date;
+  used_at: Date | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   clients: ClientsTable;
@@ -97,6 +106,7 @@ export interface Database {
   compliance_items: ComplianceItemsTable;
   deliverables: DeliverablesTable;
   access_log: AccessLogTable;
+  password_reset_tokens: PasswordResetTokensTable;
 }
 
 /**

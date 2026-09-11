@@ -6,13 +6,14 @@
 import Fastify, { type FastifyInstance, type FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import secureSession from "@fastify/secure-session";
+import rateLimit from "@fastify/rate-limit";
 import { getHealthStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
 import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
 import { registerCrmRoutes } from "./modules/crm/routes.js";
 import { registerIdentityRoutes } from "./modules/identity/routes.js";
 
-export function build(): FastifyInstance {
+export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
     // Quiet during the test run so real assertions aren't buried under
     // request logs - still fully logged in dev/production.
@@ -51,6 +52,16 @@ export function build(): FastifyInstance {
   void app.register(secureSession, {
     secret: getSessionSecret(),
     salt: getSessionSalt(),
+    // Sessions expire after a bounded period, never indefinitely
+    // (docs/security/SECURITY_REQUIREMENTS.md V3) - verified server-side
+    // on every request, since it's baked into the encrypted payload
+    // itself, not just an advisory cookie maxAge. 24h balances that
+    // requirement against the mobile, quick-check usage pattern
+    // (docs/ux/USER_JOURNEY_MAP.md Journey 7) so a staff member logging
+    // in each morning isn't logged out mid-day. Stated explicitly here
+    // rather than left to the library's own default, even though it
+    // happens to match.
+    expiry: 60 * 60 * 24,
     cookie: {
       path: "/",
       httpOnly: true,
@@ -61,6 +72,24 @@ export function build(): FastifyInstance {
       // silently never set the cookie at all.
       secure: config.NODE_ENV === "production",
     },
+  });
+
+  // Registered once, globally, at the app root - docs/security/
+  // SECURITY_REQUIREMENTS.md V2/V11's rate-limiting requirement applies
+  // to every endpoint (API_CONVENTIONS.md's catalog gives every single
+  // one a "standard" or "aggressive" tier, never "none"). This must be
+  // awaited before any route is defined: registering it inside a nested,
+  // unawaited child scope (the pattern this module used originally)
+  // silently never attaches its request hook at all - confirmed by
+  // direct testing, not assumed - so every previously "rate-limited"
+  // endpoint was actually unlimited. 100/min/IP is the generous
+  // "standard" default (real MVP user count is small); specific
+  // abuse-prone endpoints (login, public contact, password reset)
+  // override it with a stricter per-route `config.rateLimit`.
+  await app.register(rateLimit, {
+    global: true,
+    max: 100,
+    timeWindow: "1 minute",
   });
 
   app.setErrorHandler((error: FastifyError | AppError, request, reply) => {

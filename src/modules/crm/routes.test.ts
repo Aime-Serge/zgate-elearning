@@ -3,7 +3,7 @@ import { build } from "../../app.js";
 
 describe("POST /api/public/contact", () => {
   it("rejects a missing name with a plain-language field error", async () => {
-    const app = build();
+    const app = await build();
     const response = await app.inject({
       method: "POST",
       url: "/api/public/contact",
@@ -20,7 +20,7 @@ describe("POST /api/public/contact", () => {
   });
 
   it("rejects a missing contact field", async () => {
-    const app = build();
+    const app = await build();
     const response = await app.inject({
       method: "POST",
       url: "/api/public/contact",
@@ -34,7 +34,7 @@ describe("POST /api/public/contact", () => {
   });
 
   it("rejects a statedNeed over 2000 characters", async () => {
-    const app = build();
+    const app = await build();
     const response = await app.inject({
       method: "POST",
       url: "/api/public/contact",
@@ -61,7 +61,7 @@ describe("POST /api/public/contact", () => {
       return;
     }
 
-    const app = build();
+    const app = await build();
     const response = await app.inject({
       method: "POST",
       url: "/api/public/contact",

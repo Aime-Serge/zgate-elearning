@@ -28,35 +28,28 @@ function zodFieldErrors(
 }
 
 export function registerCrmRoutes(app: FastifyInstance): void {
-  app.register(
-    (scoped, _opts, done) => {
-      // Aggressive per-IP limit - unauthenticated, public, spam/DoS-prone
-      // endpoint (docs/backend/API_SECURITY.md's rate-limiting table).
-      void scoped.register(import("@fastify/rate-limit"), {
-        max: 5,
-        timeWindow: "1 minute",
-      });
+  app.post(
+    "/api/public/contact",
+    // Aggressive per-IP limit, stricter than the app-wide standard
+    // default - unauthenticated, public, spam/DoS-prone endpoint
+    // (docs/backend/API_SECURITY.md's rate-limiting table).
+    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const parsed = contactInputSchema.safeParse(request.body);
+      if (!parsed.success) {
+        throw validationError(zodFieldErrors(parsed.error.issues));
+      }
 
-      scoped.post("/api/public/contact", async (request, reply) => {
-        const parsed = contactInputSchema.safeParse(request.body);
-        if (!parsed.success) {
-          throw validationError(zodFieldErrors(parsed.error.issues));
-        }
+      await createLeadFromWebsite(getDb(), parsed.data);
 
-        await createLeadFromWebsite(getDb(), parsed.data);
-
-        // Deliberately minimal response - no lead ID or internal detail
-        // returned to an unauthenticated caller (API_CONVENTIONS.md).
-        await reply.code(201).send({ success: true });
-      });
-
-      done();
+      // Deliberately minimal response - no lead ID or internal detail
+      // returned to an unauthenticated caller (API_CONVENTIONS.md).
+      await reply.code(201).send({ success: true });
     },
-    { prefix: "" },
   );
 
-  // Authenticated staff routes - standard rate limit (generous; real MVP
-  // user count is small, docs/backend/API_SECURITY.md).
+  // Authenticated staff routes - standard rate limit, applied by the
+  // app-wide default registered in app.ts (docs/backend/API_SECURITY.md).
   app.get("/api/leads", async (request, reply) => {
     requireRole("staff_marketing", "staff_advisory", "admin")(request);
 
