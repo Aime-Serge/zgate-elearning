@@ -108,10 +108,20 @@ export async function getClientDetail(
     throw new AppError("NOT_FOUND", "Not found.");
   }
 
+  // Active engagements only, most-recently-started first - the staff
+  // detail page uses engagementIds[0] to decide which engagement an
+  // uploaded deliverable attaches to (FEAT-06.3), so this needs a
+  // deterministic, meaningful order: an unordered list risked silently
+  // picking a terminated/completed engagement, or an arbitrary one once
+  // a client has more than one (not yet possible at MVP scale - only
+  // Advisory is active - but the underlying query was already wrong for
+  // the day a client legitimately has two).
   const engagements = await db
     .selectFrom("engagements")
     .select("id")
     .where("client_id", "=", clientId)
+    .where("status", "=", "active")
+    .orderBy("started_at", "desc")
     .execute();
 
   return {

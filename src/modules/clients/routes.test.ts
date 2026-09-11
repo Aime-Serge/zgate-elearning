@@ -350,4 +350,69 @@ describe("GET /api/clients/:id", () => {
       await app.close();
     }
   });
+
+  it("engagementIds excludes terminated/completed engagements and orders active ones most-recent-first (docs/qa/DEFECTS.md D-01)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+
+      const completed = await db
+        .insertInto("engagements")
+        .values({
+          client_id: clientId,
+          division: "advisory",
+          service_schedule: "A",
+          status: "completed",
+          started_at: new Date("2020-01-01"),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      createdEngagementIds.push(completed.id);
+
+      const olderActive = await db
+        .insertInto("engagements")
+        .values({
+          client_id: clientId,
+          division: "advisory",
+          service_schedule: "A",
+          status: "active",
+          started_at: new Date("2024-01-01"),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      createdEngagementIds.push(olderActive.id);
+
+      const newerActive = await db
+        .insertInto("engagements")
+        .values({
+          client_id: clientId,
+          division: "advisory",
+          service_schedule: "A",
+          status: "active",
+          started_at: new Date("2026-01-01"),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      createdEngagementIds.push(newerActive.id);
+
+      const cookie = await loginAs(app, "admin");
+      const res = await app.inject({
+        method: "GET",
+        url: `/api/clients/${clientId}`,
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ engagementIds: string[] }>();
+
+      expect(body.engagementIds).not.toContain(completed.id);
+      expect(body.engagementIds).toEqual([newerActive.id, olderActive.id]);
+    } finally {
+      await app.close();
+    }
+  });
 });
