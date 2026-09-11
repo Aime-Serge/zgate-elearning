@@ -4,9 +4,11 @@
  */
 import type { FastifyInstance } from "fastify";
 import { getDb } from "../../lib/db.js";
+import { AppError } from "../../lib/errors.js";
 import { logAccess } from "../../lib/audit.js";
 import { requireRole } from "../../lib/authz.js";
-import { getOwnClient, listClients } from "./service.js";
+import { assertClientDataAccess } from "../../lib/engagementAccess.js";
+import { getOwnClient, listClients, getClientDetail } from "./service.js";
 
 export function registerClientsRoutes(app: FastifyInstance): void {
   app.get("/api/clients/me", async (request, reply) => {
@@ -55,5 +57,29 @@ export function registerClientsRoutes(app: FastifyInstance): void {
     }
 
     await reply.send({ clients });
+  });
+
+  app.get<{ Params: { id: string } }>("/api/clients/:id", async (request, reply) => {
+    const user = requireRole("staff_advisory", "admin")(request);
+    const clientId = request.params.id;
+    if (!clientId) {
+      throw new AppError("VALIDATION_ERROR", "A client id is required.");
+    }
+
+    // Written once here so the day an assignment concept replaces the
+    // current "any staff_advisory" scope, this call site doesn't need
+    // to change - see lib/engagementAccess.ts.
+    assertClientDataAccess(user, clientId);
+
+    const db = getDb();
+    const client = await getClientDetail(db, clientId);
+    await logAccess(db, {
+      userId: user.userId,
+      action: "view_client_detail",
+      resourceType: "client",
+      resourceId: client.id,
+    });
+
+    await reply.send(client);
   });
 }

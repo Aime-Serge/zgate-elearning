@@ -275,3 +275,79 @@ describe("GET /api/clients", () => {
     }
   });
 });
+
+describe("GET /api/clients/:id", () => {
+  it("rejects an unauthenticated caller", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const res = await app.inject({ method: "GET", url: `/api/clients/${randomUUID()}` });
+      expect(res.statusCode).toBe(401);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects client and staff_marketing (vertical privilege escalation)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      for (const [role, forClient] of [
+        ["client", clientId],
+        ["staff_marketing", null],
+      ] as const) {
+        const cookie = await loginAs(app, role, forClient);
+        const res = await app.inject({
+          method: "GET",
+          url: `/api/clients/${clientId}`,
+          cookies: { session: cookie },
+        });
+        expect(res.statusCode).toBe(403);
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns full detail including tin for staff, and 404 for a nonexistent id", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      await db
+        .updateTable("clients")
+        .set({ tin: "123456789" })
+        .where("id", "=", clientId)
+        .execute();
+
+      const cookie = await loginAs(app, "staff_advisory");
+      const res = await app.inject({
+        method: "GET",
+        url: `/api/clients/${clientId}`,
+        cookies: { session: cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ tin: string | null }>().tin).toBe("123456789");
+
+      const notFound = await app.inject({
+        method: "GET",
+        url: `/api/clients/${randomUUID()}`,
+        cookies: { session: cookie },
+      });
+      expect(notFound.statusCode).toBe(404);
+    } finally {
+      await app.close();
+    }
+  });
+});

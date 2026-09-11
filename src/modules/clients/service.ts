@@ -64,6 +64,67 @@ export async function getOwnClient(db: Kysely<Database>, clientId: string): Prom
   };
 }
 
+export interface ClientDetailView {
+  id: string;
+  legalName: string;
+  tin: string | null;
+  registeredAddress: string | null;
+  primaryContactName: string | null;
+  primaryContactChannel: string | null;
+  /** The client's engagement ids - needed by the staff-facing "mark
+   * complete"/upload actions, which operate per-engagement, not
+   * per-client (POST /api/documents's already-approved contract
+   * requires one). One per division in general; only Advisory is an
+   * active module at MVP, so this is a single-item array in practice. */
+  engagementIds: string[];
+}
+
+/**
+ * The staff-facing client detail view (FEAT-06.2/06.3's "client summary
+ * header") - unlike the list and unlike the client's own self-service
+ * view, this genuinely needs `tin` for compliance work
+ * (docs/backend/API_CONVENTIONS.md's general conventions note: "tin
+ * appears only in staff-facing detail responses that need it").
+ */
+export async function getClientDetail(
+  db: Kysely<Database>,
+  clientId: string,
+): Promise<ClientDetailView> {
+  const client = await db
+    .selectFrom("clients")
+    .select([
+      "id",
+      "legal_name",
+      "tin",
+      "registered_address",
+      "primary_contact_name",
+      "primary_contact_channel",
+      "deleted_at",
+    ])
+    .where("id", "=", clientId)
+    .executeTakeFirst();
+
+  if (!client || client.deleted_at) {
+    throw new AppError("NOT_FOUND", "Not found.");
+  }
+
+  const engagements = await db
+    .selectFrom("engagements")
+    .select("id")
+    .where("client_id", "=", clientId)
+    .execute();
+
+  return {
+    id: client.id,
+    engagementIds: engagements.map((e) => e.id),
+    legalName: client.legal_name,
+    tin: client.tin,
+    registeredAddress: client.registered_address,
+    primaryContactName: client.primary_contact_name,
+    primaryContactChannel: client.primary_contact_channel,
+  };
+}
+
 export type ClientStatus = "on_track" | "attention_needed" | "no_items";
 
 export interface ClientListItem {
