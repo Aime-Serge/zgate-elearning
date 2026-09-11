@@ -90,6 +90,30 @@ async function createDeliverable(
   return row.id;
 }
 
+const BOUNDARY = "----zgate-test-boundary";
+
+function buildMultipartBody(
+  fields: Record<string, string>,
+  file: { fieldName: string; filename: string; contentType: string; content: Buffer },
+): Buffer {
+  const parts: Buffer[] = [];
+  for (const [name, value] of Object.entries(fields)) {
+    parts.push(
+      Buffer.from(
+        `--${BOUNDARY}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+      ),
+    );
+  }
+  parts.push(
+    Buffer.from(
+      `--${BOUNDARY}\r\nContent-Disposition: form-data; name="${file.fieldName}"; filename="${file.filename}"\r\nContent-Type: ${file.contentType}\r\n\r\n`,
+    ),
+    file.content,
+    Buffer.from(`\r\n--${BOUNDARY}--\r\n`),
+  );
+  return Buffer.concat(parts);
+}
+
 afterEach(async () => {
   const dir = resolve(process.env["DELIVERABLES_STORAGE_DIR"] ?? "./storage/deliverables");
   for (const fileRef of writtenFileRefs.splice(0)) {
@@ -363,6 +387,189 @@ describe("GET /api/documents/:id/download", () => {
         .where("resource_id", "=", deliverableId)
         .execute();
       expect(rows).toHaveLength(1);
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe("POST /api/documents", () => {
+  it("rejects an unauthenticated caller", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const res = await app.inject({ method: "POST", url: "/api/documents" });
+      expect(res.statusCode).toBe(401);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects client and staff_marketing (vertical privilege escalation)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const body = buildMultipartBody(
+        { engagementId, type: "report" },
+        {
+          fieldName: "file",
+          filename: "r.pdf",
+          contentType: "application/pdf",
+          content: Buffer.from("x"),
+        },
+      );
+
+      for (const [role, forClient] of [
+        ["client", clientId],
+        ["staff_marketing", null],
+      ] as const) {
+        const cookie = await loginAs(app, role, forClient);
+        const res = await app.inject({
+          method: "POST",
+          url: "/api/documents",
+          headers: { "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+          cookies: { session: cookie.cookie },
+          payload: body,
+        });
+        expect(res.statusCode).toBe(403);
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("uploads a real file, makes it listable and downloadable, and audit-logs it", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const staff = await loginAs(app, "staff_advisory");
+      const body = buildMultipartBody(
+        { engagementId, type: "report" },
+        {
+          fieldName: "file",
+          filename: "report.pdf",
+          contentType: "application/pdf",
+          content: Buffer.from("the real uploaded bytes"),
+        },
+      );
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/documents",
+        headers: { "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+        cookies: { session: staff.cookie },
+        payload: body,
+      });
+      expect(res.statusCode).toBe(201);
+      const created = res.json<{ id: string; type: string }>();
+      expect(created.type).toBe("report");
+
+      const { cookie: clientCookie } = await loginAs(app, "client", clientId);
+      const download = await app.inject({
+        method: "GET",
+        url: `/api/documents/${created.id}/download`,
+        cookies: { session: clientCookie },
+      });
+      expect(download.statusCode).toBe(200);
+      expect(download.body).toBe("the real uploaded bytes");
+
+      const auditRows = await db
+        .selectFrom("access_log")
+        .selectAll()
+        .where("action", "=", "upload_deliverable")
+        .where("resource_id", "=", created.id)
+        .execute();
+      expect(auditRows).toHaveLength(1);
+
+      // Clean up the file this test actually wrote to disk (not seeded
+      // via createDeliverable, so writtenFileRefs doesn't already know
+      // about it) - fetched from the DB row uploadDeliverable() created.
+      const row = await db
+        .selectFrom("deliverables")
+        .select("file_ref")
+        .where("id", "=", created.id)
+        .executeTakeFirstOrThrow();
+      writtenFileRefs.push(row.file_ref);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects a disallowed file type", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const staff = await loginAs(app, "staff_advisory");
+      const body = buildMultipartBody(
+        { engagementId, type: "report" },
+        {
+          fieldName: "file",
+          filename: "script.sh",
+          contentType: "application/x-sh",
+          content: Buffer.from("#!/bin/sh\necho hi"),
+        },
+      );
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/documents",
+        headers: { "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+        cookies: { session: staff.cookie },
+        payload: body,
+      });
+      expect(res.statusCode).toBe(400);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns 404 for an engagementId that doesn't exist", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const staff = await loginAs(app, "staff_advisory");
+      const body = buildMultipartBody(
+        { engagementId: randomUUID(), type: "report" },
+        {
+          fieldName: "file",
+          filename: "r.pdf",
+          contentType: "application/pdf",
+          content: Buffer.from("x"),
+        },
+      );
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/documents",
+        headers: { "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+        cookies: { session: staff.cookie },
+        payload: body,
+      });
+      expect(res.statusCode).toBe(404);
     } finally {
       await app.close();
     }

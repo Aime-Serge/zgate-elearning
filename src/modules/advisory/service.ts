@@ -1,15 +1,15 @@
 /**
  * advisory module business logic - the only module that touches
  * engagements/compliance_items (docs/architecture/MODULE_ARCHITECTURE.md).
- * Read-only at this phase: this is the client-portal status view
- * (FEAT-05.1). Marking an item complete (FEAT-06.2) and creating
- * engagements/compliance items in the first place (FEAT-06.1) are
- * staff-side Advisory Operations work, not yet built - there is
- * currently no way to populate this data except a direct database
- * write (used by this module's own tests, the same pattern already
- * established for every other DB-seeded test in this codebase).
+ * Creating engagements/compliance items in the first place (FEAT-06.1's
+ * data source) is still not built - there is currently no way to
+ * populate this data except a direct database write (used by this
+ * module's own tests, the same pattern already established for every
+ * other DB-seeded test in this codebase).
  */
 import type { Kysely } from "kysely";
+import { AppError } from "../../lib/errors.js";
+import { logAccess } from "../../lib/audit.js";
 import type { Database, ComplianceItemType } from "../../lib/db.js";
 
 export interface ComplianceItemView {
@@ -78,6 +78,72 @@ export async function getComplianceItemsForClient(
       // "Overdue" is deliberately not a stored state - computed here at
       // query time (docs/database/DATA_LIFECYCLES.md).
       isOverdue: row.completed_at === null && dueDate < today,
+    };
+  });
+}
+
+/** Used only by the object-level access check before completeComplianceItem runs. */
+export async function getComplianceItemOwnerClientId(
+  db: Kysely<Database>,
+  complianceItemId: string,
+): Promise<string | null> {
+  const row = await db
+    .selectFrom("compliance_items")
+    .innerJoin("engagements", "engagements.id", "compliance_items.engagement_id")
+    .where("compliance_items.id", "=", complianceItemId)
+    .select("engagements.client_id")
+    .executeTakeFirst();
+  return row?.client_id ?? null;
+}
+
+/**
+ * FEAT-06.2: marks a compliance item complete. No client-supplied
+ * "completed" timestamp is ever accepted - the server sets
+ * `completed_at = now()`, closing off a backdated/falsified compliance
+ * record (docs/security/SECURITY_REQUIREMENTS.md V11).
+ */
+export async function completeComplianceItem(
+  db: Kysely<Database>,
+  complianceItemId: string,
+  staffUserId: string,
+): Promise<ComplianceItemView> {
+  return db.transaction().execute(async (trx) => {
+    const item = await trx
+      .selectFrom("compliance_items")
+      .select(["id", "type", "due_date", "completed_at"])
+      .where("id", "=", complianceItemId)
+      .executeTakeFirst();
+
+    if (!item) {
+      throw new AppError("NOT_FOUND", "Not found.");
+    }
+    if (item.completed_at) {
+      throw new AppError("CONFLICT", "This item has already been marked complete.");
+    }
+
+    const completedAt = new Date();
+    await trx
+      .updateTable("compliance_items")
+      .set({ completed_at: completedAt, completed_by: staffUserId })
+      .where("id", "=", complianceItemId)
+      .execute();
+
+    // Same transaction as the write itself - an un-audited compliance-
+    // critical write is a full failure, not a best-effort afterthought
+    // (docs/architecture/DATA_ARCHITECTURE.md).
+    await logAccess(trx, {
+      userId: staffUserId,
+      action: "complete_compliance_item",
+      resourceType: "compliance_item",
+      resourceId: item.id,
+    });
+
+    return {
+      id: item.id,
+      type: item.type,
+      dueDate: toDateOnlyString(item.due_date),
+      completedAt: completedAt.toISOString(),
+      isOverdue: false,
     };
   });
 }

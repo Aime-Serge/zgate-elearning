@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance, type FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import secureSession from "@fastify/secure-session";
 import rateLimit from "@fastify/rate-limit";
+import multipart from "@fastify/multipart";
 import { getHealthStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
 import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
@@ -15,6 +16,8 @@ import { registerIdentityRoutes } from "./modules/identity/routes.js";
 import { registerClientsRoutes } from "./modules/clients/routes.js";
 import { registerAdvisoryRoutes } from "./modules/advisory/routes.js";
 import { registerDocumentsRoutes } from "./modules/documents/routes.js";
+import { registerReportingRoutes } from "./modules/reporting/routes.js";
+import { MAX_UPLOAD_SIZE_BYTES } from "./modules/documents/schema.js";
 
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -95,6 +98,16 @@ export async function build(): Promise<FastifyInstance> {
     timeWindow: "1 minute",
   });
 
+  // FEAT-06.3's upload endpoint - fields and the file both land on
+  // request.body (docs/security/SECURITY_REQUIREMENTS.md V12: type
+  // allowlist and size limit are still enforced explicitly in the route
+  // handler, this global limit is a hard backstop against an
+  // oversized/abusive request before it's ever buffered further).
+  void app.register(multipart, {
+    attachFieldsToBody: true,
+    limits: { fileSize: MAX_UPLOAD_SIZE_BYTES, files: 1 },
+  });
+
   app.setErrorHandler((error: FastifyError | AppError, request, reply) => {
     const correlationId = request.id;
 
@@ -145,6 +158,7 @@ export async function build(): Promise<FastifyInstance> {
   registerClientsRoutes(app);
   registerAdvisoryRoutes(app);
   registerDocumentsRoutes(app);
+  registerReportingRoutes(app);
 
   return app;
 }

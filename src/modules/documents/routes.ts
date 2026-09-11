@@ -6,11 +6,27 @@ import type { FastifyInstance } from "fastify";
 import { getDb } from "../../lib/db.js";
 import { validationError, AppError } from "../../lib/errors.js";
 import { getSessionUser } from "../../lib/session.js";
+import { requireRole } from "../../lib/authz.js";
 import { assertClientDataAccess } from "../../lib/engagementAccess.js";
 import { logAccess } from "../../lib/audit.js";
 import { readDeliverable } from "../../lib/storage.js";
-import { documentsQuerySchema } from "./schema.js";
-import { listDeliverablesForClient, getDeliverableForDownload } from "./service.js";
+import { documentsQuerySchema, uploadFieldsSchema, ALLOWED_UPLOAD_MIME_TYPES } from "./schema.js";
+import {
+  listDeliverablesForClient,
+  getDeliverableForDownload,
+  getEngagementClientId,
+  uploadDeliverable,
+} from "./service.js";
+
+interface MultipartField {
+  value: unknown;
+}
+
+interface MultipartFileField {
+  toBuffer: () => Promise<Buffer>;
+  mimetype: string;
+  filename: string;
+}
 
 export function registerDocumentsRoutes(app: FastifyInstance): void {
   app.get("/api/documents", async (request, reply) => {
@@ -87,5 +103,56 @@ export function registerDocumentsRoutes(app: FastifyInstance): void {
       .header("Content-Disposition", `attachment; filename="deliverable-${document.id}"`)
       .header("Content-Type", "application/octet-stream")
       .send(stream);
+  });
+
+  app.post("/api/documents", async (request, reply) => {
+    const user = requireRole("staff_advisory", "admin")(request);
+
+    const body = request.body as Record<string, MultipartField | MultipartFileField> | undefined;
+    const file = body?.["file"] as MultipartFileField | undefined;
+    if (!file || typeof file.toBuffer !== "function") {
+      throw validationError({ file: "A file is required." });
+    }
+
+    const fields = {
+      engagementId: (body?.["engagementId"] as MultipartField | undefined)?.value,
+      type: (body?.["type"] as MultipartField | undefined)?.value,
+    };
+    const parsed = uploadFieldsSchema.safeParse(fields);
+    if (!parsed.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (typeof key === "string") fieldErrors[key] = issue.message;
+      }
+      throw validationError(fieldErrors);
+    }
+
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.mimetype)) {
+      throw validationError({ file: "That file type isn't supported." });
+    }
+
+    let content: Buffer;
+    try {
+      content = await file.toBuffer();
+    } catch {
+      throw validationError({ file: "That file is too large." });
+    }
+
+    const db = getDb();
+    const ownerClientId = await getEngagementClientId(db, parsed.data.engagementId);
+    if (ownerClientId === null) {
+      throw new AppError("NOT_FOUND", "Not found.");
+    }
+    assertClientDataAccess(user, ownerClientId);
+
+    const deliverable = await uploadDeliverable(db, {
+      engagementId: parsed.data.engagementId,
+      type: parsed.data.type,
+      content,
+      uploadedBy: user.userId,
+    });
+
+    await reply.code(201).send(deliverable);
   });
 }

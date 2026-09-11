@@ -1,15 +1,10 @@
 /**
  * clients module business logic - the only module that touches the
- * clients table (docs/architecture/MODULE_ARCHITECTURE.md). createClient
- * (lead conversion) and getOwnClient (the client portal's "organization"
- * view, FEAT-05.1's dependency) are both built. GET /api/clients (the
- * staff-facing list, FEAT-06.1) is a separate, not-yet-built slice -
- * that's staff Advisory tooling, out of scope for the client-portal
- * work this module currently serves.
+ * clients table (docs/architecture/MODULE_ARCHITECTURE.md).
  */
 import type { Kysely, Transaction } from "kysely";
 import { AppError } from "../../lib/errors.js";
-import type { Database } from "../../lib/db.js";
+import type { Database, ComplianceItemType } from "../../lib/db.js";
 
 export interface CreateClientInput {
   legalName: string;
@@ -67,4 +62,86 @@ export async function getOwnClient(db: Kysely<Database>, clientId: string): Prom
     legalName: client.legal_name,
     primaryContactName: client.primary_contact_name,
   };
+}
+
+export type ClientStatus = "on_track" | "attention_needed" | "no_items";
+
+export interface ClientListItem {
+  id: string;
+  legalName: string;
+  nextItemType: ComplianceItemType | null;
+  nextDueDate: string | null;
+  status: ClientStatus;
+}
+
+function toDateOnlyString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * The staff-facing client list (FEAT-06.1) - sorted nearest-due-first,
+ * always (docs/design/PAGE_SPECIFICATIONS.md: "not user-configurable at
+ * MVP scale"). Deliberately excludes tin/registeredAddress/contact
+ * details - a summary list doesn't need the most sensitive fields
+ * (docs/backend/API_CONVENTIONS.md).
+ */
+export async function listClients(db: Kysely<Database>): Promise<ClientListItem[]> {
+  const rows = await db
+    .selectFrom("clients")
+    .leftJoin("engagements", "engagements.client_id", "clients.id")
+    .leftJoin("compliance_items", (join) =>
+      join
+        .onRef("compliance_items.engagement_id", "=", "engagements.id")
+        .on("compliance_items.completed_at", "is", null),
+    )
+    .where("clients.deleted_at", "is", null)
+    .select([
+      "clients.id",
+      "clients.legal_name",
+      "compliance_items.type",
+      "compliance_items.due_date",
+    ])
+    .execute();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const byClient = new Map<
+    string,
+    { legalName: string; nextType: ComplianceItemType | null; nextDueDate: Date | null }
+  >();
+
+  for (const row of rows) {
+    const existing = byClient.get(row.id);
+    const current = existing ?? { legalName: row.legal_name, nextType: null, nextDueDate: null };
+    if (row.due_date && (!current.nextDueDate || row.due_date < current.nextDueDate)) {
+      current.nextType = row.type;
+      current.nextDueDate = row.due_date;
+    }
+    byClient.set(row.id, current);
+  }
+
+  return [...byClient.entries()]
+    .map(([id, client]) => {
+      const status: ClientStatus = !client.nextDueDate
+        ? "no_items"
+        : client.nextDueDate < today
+          ? "attention_needed"
+          : "on_track";
+      return {
+        id,
+        legalName: client.legalName,
+        nextItemType: client.nextType,
+        nextDueDate: client.nextDueDate ? toDateOnlyString(client.nextDueDate) : null,
+        status,
+      };
+    })
+    .sort((a, b) => {
+      if (!a.nextDueDate) return 1;
+      if (!b.nextDueDate) return -1;
+      return a.nextDueDate.localeCompare(b.nextDueDate);
+    });
 }

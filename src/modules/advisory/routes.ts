@@ -6,10 +6,15 @@ import type { FastifyInstance } from "fastify";
 import { getDb } from "../../lib/db.js";
 import { validationError, AppError } from "../../lib/errors.js";
 import { getSessionUser } from "../../lib/session.js";
+import { requireRole } from "../../lib/authz.js";
 import { assertClientDataAccess } from "../../lib/engagementAccess.js";
 import { logAccess } from "../../lib/audit.js";
 import { complianceItemsQuerySchema } from "./schema.js";
-import { getComplianceItemsForClient } from "./service.js";
+import {
+  getComplianceItemsForClient,
+  getComplianceItemOwnerClientId,
+  completeComplianceItem,
+} from "./service.js";
 
 export function registerAdvisoryRoutes(app: FastifyInstance): void {
   app.get("/api/advisory/compliance-items", async (request, reply) => {
@@ -56,4 +61,28 @@ export function registerAdvisoryRoutes(app: FastifyInstance): void {
 
     await reply.send({ items });
   });
+
+  app.post<{ Params: { id: string } }>(
+    "/api/advisory/compliance-items/:id/complete",
+    async (request, reply) => {
+      const user = requireRole("staff_advisory", "admin")(request);
+      const itemId = request.params.id;
+      if (!itemId) {
+        throw new AppError("VALIDATION_ERROR", "An item id is required.");
+      }
+
+      const db = getDb();
+      const ownerClientId = await getComplianceItemOwnerClientId(db, itemId);
+      if (ownerClientId === null) {
+        throw new AppError("NOT_FOUND", "Not found.");
+      }
+      // Written once here so the day an assignment concept replaces the
+      // current "any staff_advisory" scope, this call site doesn't need
+      // to change - see lib/engagementAccess.ts.
+      assertClientDataAccess(user, ownerClientId);
+
+      const result = await completeComplianceItem(db, itemId, user.userId);
+      await reply.send(result);
+    },
+  );
 }

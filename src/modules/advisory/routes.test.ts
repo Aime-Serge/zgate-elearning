@@ -263,3 +263,147 @@ describe("GET /api/advisory/compliance-items", () => {
     }
   });
 });
+
+describe("POST /api/advisory/compliance-items/:id/complete", () => {
+  it("rejects an unauthenticated caller", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    const app = await build();
+    try {
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/advisory/compliance-items/${randomUUID()}/complete`,
+      });
+      expect(res.statusCode).toBe(401);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects client and staff_marketing (vertical privilege escalation)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const item = await db
+        .insertInto("compliance_items")
+        .values({
+          engagement_id: engagementId,
+          type: "close_out",
+          due_date: new Date("2026-01-01"),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      for (const [role, forClient] of [
+        ["client", clientId],
+        ["staff_marketing", null],
+      ] as const) {
+        const cookie = await loginAs(app, role, forClient);
+        const res = await app.inject({
+          method: "POST",
+          url: `/api/advisory/compliance-items/${item.id}/complete`,
+          cookies: { session: cookie },
+        });
+        expect(res.statusCode).toBe(403);
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("marks the item complete with a server-set timestamp, ignoring any client-supplied one", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const item = await db
+        .insertInto("compliance_items")
+        .values({
+          engagement_id: engagementId,
+          type: "close_out",
+          due_date: new Date("2026-01-01"),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const cookie = await loginAs(app, "staff_advisory");
+      const before = new Date();
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/advisory/compliance-items/${item.id}/complete`,
+        cookies: { session: cookie },
+        // A backdated completedAt in the payload must have zero effect -
+        // the endpoint accepts no body fields at all
+        // (docs/security/SECURITY_REQUIREMENTS.md V11).
+        payload: { completedAt: "2000-01-01T00:00:00.000Z" },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ completedAt: string }>();
+      expect(new Date(body.completedAt).getTime()).toBeGreaterThanOrEqual(before.getTime());
+
+      const auditRows = await db
+        .selectFrom("access_log")
+        .selectAll()
+        .where("action", "=", "complete_compliance_item")
+        .where("resource_id", "=", item.id)
+        .execute();
+      expect(auditRows).toHaveLength(1);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns 409 for an already-completed item and 404 for one that doesn't exist", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const item = await db
+        .insertInto("compliance_items")
+        .values({
+          engagement_id: engagementId,
+          type: "close_out",
+          due_date: new Date("2026-01-01"),
+          completed_at: new Date(),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const cookie = await loginAs(app, "staff_advisory");
+
+      const alreadyDone = await app.inject({
+        method: "POST",
+        url: `/api/advisory/compliance-items/${item.id}/complete`,
+        cookies: { session: cookie },
+      });
+      expect(alreadyDone.statusCode).toBe(409);
+
+      const notFound = await app.inject({
+        method: "POST",
+        url: `/api/advisory/compliance-items/${randomUUID()}/complete`,
+        cookies: { session: cookie },
+      });
+      expect(notFound.statusCode).toBe(404);
+    } finally {
+      await app.close();
+    }
+  });
+});

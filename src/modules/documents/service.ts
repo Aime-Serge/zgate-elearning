@@ -1,16 +1,12 @@
 /**
  * documents module business logic - the only module that touches
- * deliverables (docs/architecture/MODULE_ARCHITECTURE.md). Read-only at
- * this phase: this is the client-portal deliverables list and download
- * (FEAT-05.2). Uploading a deliverable (FEAT-06.3) is staff-side
- * Advisory Operations work, not yet built - this module's tests create
- * fixtures with a direct database write plus a direct call to
- * lib/storage.ts, the same pattern already established for every other
- * DB-seeded test in this codebase.
+ * deliverables (docs/architecture/MODULE_ARCHITECTURE.md).
  */
 import type { Kysely } from "kysely";
 import type { Database, DeliverableType } from "../../lib/db.js";
 import { AppError } from "../../lib/errors.js";
+import { logAccess } from "../../lib/audit.js";
+import { generateFileRef, writeDeliverable } from "../../lib/storage.js";
 
 export interface DeliverableView {
   id: string;
@@ -67,4 +63,62 @@ export async function getDeliverableForDownload(
   }
 
   return { id: row.id, type: row.type, fileRef: row.file_ref, ownerClientId: row.client_id };
+}
+
+/** Used only by the upload route's object-level check, to confirm the
+ * target engagement exists and to resolve who it belongs to. */
+export async function getEngagementClientId(
+  db: Kysely<Database>,
+  engagementId: string,
+): Promise<string | null> {
+  const row = await db
+    .selectFrom("engagements")
+    .select("client_id")
+    .where("id", "=", engagementId)
+    .executeTakeFirst();
+  return row?.client_id ?? null;
+}
+
+export interface UploadDeliverableInput {
+  engagementId: string;
+  type: DeliverableType;
+  content: Buffer;
+  uploadedBy: string;
+}
+
+/**
+ * FEAT-06.3: the only place a deliverable is created. The file is
+ * written to storage first, then the metadata row - if the metadata
+ * write fails, an orphaned file on disk is a harmless, cleanable
+ * leftover; the reverse order would risk a DB row pointing at a file
+ * that was never actually written.
+ */
+export async function uploadDeliverable(
+  db: Kysely<Database>,
+  input: UploadDeliverableInput,
+): Promise<DeliverableView> {
+  const fileRef = generateFileRef();
+  await writeDeliverable(fileRef, input.content);
+
+  return db.transaction().execute(async (trx) => {
+    const row = await trx
+      .insertInto("deliverables")
+      .values({
+        engagement_id: input.engagementId,
+        type: input.type,
+        file_ref: fileRef,
+        uploaded_by: input.uploadedBy,
+      })
+      .returning(["id", "type", "uploaded_at"])
+      .executeTakeFirstOrThrow();
+
+    await logAccess(trx, {
+      userId: input.uploadedBy,
+      action: "upload_deliverable",
+      resourceType: "deliverable",
+      resourceId: row.id,
+    });
+
+    return { id: row.id, type: row.type, uploadedAt: row.uploaded_at.toISOString() };
+  });
 }
