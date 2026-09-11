@@ -5,7 +5,7 @@
 import type { FastifyInstance } from "fastify";
 import { getDb } from "../../lib/db.js";
 import { AppError } from "../../lib/errors.js";
-import { logAccess } from "../../lib/audit.js";
+import { logAccess, logAccessMany } from "../../lib/audit.js";
 import { requireRole } from "../../lib/authz.js";
 import { assertClientDataAccess } from "../../lib/engagementAccess.js";
 import { getOwnClient, listClients, getClientDetail } from "./service.js";
@@ -46,15 +46,19 @@ export function registerClientsRoutes(app: FastifyInstance): void {
     // One row per client, not one row for "the list" - access_log has
     // no concept of a resource-less/list-level event, and logging per
     // record is the semantically correct granularity anyway (matches
-    // every other logged action in this codebase).
-    for (const client of clients) {
-      await logAccess(db, {
+    // every other logged action in this codebase). A single batched
+    // INSERT, not N sequential awaited round trips - found as a real
+    // N+1 pattern during this engagement's performance review
+    // (docs/performance/PERFORMANCE_REPORT.md).
+    await logAccessMany(
+      db,
+      clients.map((client) => ({
         userId: user.userId,
         action: "view_client_list",
         resourceType: "client",
         resourceId: client.id,
-      });
-    }
+      })),
+    );
 
     await reply.send({ clients });
   });
