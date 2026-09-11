@@ -46,8 +46,8 @@ export function ForgotPasswordForm() {
   if (submitted) {
     return (
       <div className={styles.success} role="status">
-        If that email matches an account, we&rsquo;ve sent a link to reset the password. It
-        expires in 1 hour.
+        If that email matches an account, we&rsquo;ve sent a link to reset the password. It expires
+        in 1 hour.
       </div>
     );
   }
