@@ -6,6 +6,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Contact",
   description: `Get in touch with ${company.legalName}.`,
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {

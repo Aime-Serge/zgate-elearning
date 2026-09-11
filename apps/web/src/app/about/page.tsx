@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "About",
   description: mission,
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {

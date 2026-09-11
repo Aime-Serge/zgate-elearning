@@ -7,6 +7,7 @@ const division = getDivision("tech");
 export const metadata: Metadata = {
   title: division.name,
   description: division.mission,
+  alternates: { canonical: `/${division.slug}` },
 };
 
 export default function TechPage() {

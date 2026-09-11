@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Enroll",
   description: "Enroll in a Z-GATE Academy course.",
+  alternates: { canonical: "/academy/enroll" },
 };
 
 export default function AcademyEnrollPage() {

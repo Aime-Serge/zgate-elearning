@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { company, elevatorPitch, divisions } from "@/lib/content";
@@ -6,6 +7,13 @@ import styles from "./page.module.css";
 // Static generation — this content changes rarely, so it's pre-rendered
 // at build time (docs/frontend/ROUTE_MAP.md's rendering-choice rationale).
 export const dynamic = "error";
+
+// Title/description are intentionally omitted - the root layout's
+// defaults (docs/marketing/SEO_AUDIT.md) already are the homepage's
+// title/description. Only the self-referencing canonical is new here.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (
