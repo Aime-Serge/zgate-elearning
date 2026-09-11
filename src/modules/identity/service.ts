@@ -4,7 +4,7 @@
  */
 import type { Kysely } from "kysely";
 import type { Database } from "../../lib/db.js";
-import { hashPassword, verifyPassword } from "../../lib/auth.js";
+import { hashPassword, verifyPassword, DUMMY_PASSWORD_HASH } from "../../lib/auth.js";
 import { generateToken, hashToken } from "../../lib/token.js";
 import { AppError } from "../../lib/errors.js";
 import type { SessionUser } from "../../lib/session.js";
@@ -34,6 +34,11 @@ export async function verifyCredentials(
     .executeTakeFirst();
 
   if (!user || user.deactivated_at) {
+    // Still runs a real bcrypt compare, against a fixed dummy hash, so
+    // this branch costs the same as the wrong-password branch below -
+    // see DUMMY_PASSWORD_HASH's own comment for why this matters even
+    // though the response is already identical either way.
+    await verifyPassword(password, DUMMY_PASSWORD_HASH);
     return { ok: false };
   }
 

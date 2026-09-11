@@ -458,13 +458,20 @@ describe("POST /api/documents", () => {
       const clientId = await createTestClient();
       const engagementId = await createEngagement(clientId);
       const staff = await loginAs(app, "staff_advisory");
+      // Real PDF magic bytes ("%PDF-") required - lib/fileSignature.ts
+      // verifies the upload's actual content against its claimed type,
+      // not just the client-asserted Content-Type header.
+      const pdfContent = Buffer.concat([
+        Buffer.from("%PDF-1.4\n"),
+        Buffer.from("the real uploaded bytes"),
+      ]);
       const body = buildMultipartBody(
         { engagementId, type: "report" },
         {
           fieldName: "file",
           filename: "report.pdf",
           contentType: "application/pdf",
-          content: Buffer.from("the real uploaded bytes"),
+          content: pdfContent,
         },
       );
 
@@ -486,7 +493,7 @@ describe("POST /api/documents", () => {
         cookies: { session: clientCookie },
       });
       expect(download.statusCode).toBe(200);
-      expect(download.body).toBe("the real uploaded bytes");
+      expect(download.body).toBe(pdfContent.toString());
 
       const auditRows = await db
         .selectFrom("access_log")
@@ -544,6 +551,44 @@ describe("POST /api/documents", () => {
     }
   });
 
+  it("rejects a file whose content doesn't match its claimed type (spoofed Content-Type)", async () => {
+    if (!canRun) {
+      console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
+      return;
+    }
+    if (!db) throw new Error("db not available");
+    const app = await build();
+    try {
+      const clientId = await createTestClient();
+      const engagementId = await createEngagement(clientId);
+      const staff = await loginAs(app, "staff_advisory");
+      // An HTML file, on the allowlist by Content-Type alone - the
+      // multipart part claims application/pdf, but the bytes are not a
+      // real PDF. lib/fileSignature.ts must catch this even though the
+      // claimed type passes the allowlist check.
+      const body = buildMultipartBody(
+        { engagementId, type: "report" },
+        {
+          fieldName: "file",
+          filename: "not-really.pdf",
+          contentType: "application/pdf",
+          content: Buffer.from("<script>alert(1)</script>"),
+        },
+      );
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/documents",
+        headers: { "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+        cookies: { session: staff.cookie },
+        payload: body,
+      });
+      expect(res.statusCode).toBe(400);
+    } finally {
+      await app.close();
+    }
+  });
+
   it("returns 404 for an engagementId that doesn't exist", async () => {
     if (!canRun) {
       console.warn("Skipping DB-dependent test: env not configured locally. Runs in CI.");
@@ -558,7 +603,7 @@ describe("POST /api/documents", () => {
           fieldName: "file",
           filename: "r.pdf",
           contentType: "application/pdf",
-          content: Buffer.from("x"),
+          content: Buffer.from("%PDF-1.4\nx"),
         },
       );
 

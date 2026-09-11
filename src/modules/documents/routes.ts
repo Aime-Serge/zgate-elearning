@@ -10,6 +10,7 @@ import { requireRole } from "../../lib/authz.js";
 import { assertClientDataAccess } from "../../lib/engagementAccess.js";
 import { logAccess } from "../../lib/audit.js";
 import { readStoredFile } from "../../lib/storage.js";
+import { matchesClaimedType } from "../../lib/fileSignature.js";
 import { documentsQuerySchema, uploadFieldsSchema, ALLOWED_UPLOAD_MIME_TYPES } from "./schema.js";
 import {
   listDeliverablesForClient,
@@ -137,6 +138,15 @@ export function registerDocumentsRoutes(app: FastifyInstance): void {
       content = await file.toBuffer();
     } catch {
       throw validationError({ file: "That file is too large." });
+    }
+
+    // The Content-Type above is only what the caller claimed - a
+    // multipart part's mimetype is trivially spoofable. Checking the
+    // file's actual leading bytes against that claim is real type
+    // validation, not just an asserted label
+    // (docs/security/SECURITY_REQUIREMENTS.md V5/V12).
+    if (!matchesClaimedType(content, file.mimetype)) {
+      throw validationError({ file: "That file's contents don't match its type." });
     }
 
     const db = getDb();
