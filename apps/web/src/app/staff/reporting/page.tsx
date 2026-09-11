@@ -235,7 +235,8 @@ export default function StaffReportingPage() {
               {dictionaryQuery.data.tables.map((table) => (
                 <details key={table.name} className={styles.tableDetails}>
                   <summary>
-                    {table.name} <span className={styles.columnCount}>({table.columns.length})</span>
+                    {table.name}{" "}
+                    <span className={styles.columnCount}>({table.columns.length})</span>
                   </summary>
                   <ul className={styles.columnList}>
                     {table.columns.map((column) => (

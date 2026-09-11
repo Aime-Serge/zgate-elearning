@@ -32,7 +32,5 @@ export function matchesClaimedType(content: Buffer, claimedMimeType: string): bo
   if (!signatures) {
     return false;
   }
-  return signatures.some((signature) =>
-    signature.every((byte, index) => content[index] === byte),
-  );
+  return signatures.some((signature) => signature.every((byte, index) => content[index] === byte));
 }

@@ -28,5 +28,4 @@ export function verifyPassword(plaintext: string, hash: string): Promise<boolean
  * email/password was wrong" even though the response body is already
  * identical either way (CWE-208, observable timing discrepancy).
  */
-export const DUMMY_PASSWORD_HASH =
-  "$2b$12$EHTvuYLaFvPXQCX14D96PeChYfbAtXxO7RRQilsvCrmdFQaGC6Jva";
+export const DUMMY_PASSWORD_HASH = "$2b$12$EHTvuYLaFvPXQCX14D96PeChYfbAtXxO7RRQilsvCrmdFQaGC6Jva";
