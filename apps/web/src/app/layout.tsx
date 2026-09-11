@@ -43,6 +43,21 @@ export const metadata: Metadata = {
   },
 };
 
+// Organization structured data - only fields already approved as real
+// (docs/business/BUSINESS_ALIGNMENT.md's confirmed address, the real
+// registered contact info) via `company` in lib/content.ts. No
+// aggregateRating, review, or other fabricable field is included.
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: company.legalName,
+  alternateName: company.tradingName,
+  url: siteUrl,
+  email: company.email,
+  telephone: company.phone,
+  address: company.registeredAddress,
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -50,6 +65,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
         <a href="#main" className="skip-link">
           Skip to content
         </a>
