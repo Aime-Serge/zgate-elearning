@@ -81,3 +81,15 @@ export const resetPasswordFormSchema = z.object({
 });
 
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
+
+/**
+ * Mirrors the backend's enrollmentInputSchema
+ * (src/modules/academy/schema.ts).
+ */
+export const enrollmentFormSchema = z.object({
+  name: z.string().trim().min(1, "Enter the learner's name.").max(200),
+  contact: z.string().trim().min(1, "Enter a way to reach the learner.").max(200),
+  cohortId: z.string().min(1, "Choose a cohort."),
+});
+
+export type EnrollmentFormValues = z.infer<typeof enrollmentFormSchema>;

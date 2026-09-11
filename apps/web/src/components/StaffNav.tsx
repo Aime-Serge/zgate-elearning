@@ -9,6 +9,7 @@ import styles from "./StaffNav.module.css";
 const ALL_LINKS = [
   { href: "/staff/leads", label: "Leads", roles: ["staff_marketing", "admin"] },
   { href: "/staff/clients", label: "Clients", roles: ["staff_advisory", "admin"] },
+  { href: "/staff/academy", label: "Academy", roles: ["staff_academy", "admin"] },
   {
     href: "/staff/reporting",
     label: "Reporting",
@@ -38,18 +39,21 @@ export function StaffNav({ role }: { role: string }) {
   return (
     <nav aria-label="Staff portal" className={styles.nav}>
       <ul className={styles.list}>
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className={styles.link}
-              aria-current={pathname === link.href ? "page" : undefined}
-              data-active={pathname === link.href}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
+        {links.map((link) => {
+          const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+          return (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className={styles.link}
+                aria-current={active ? "page" : undefined}
+                data-active={active}
+              >
+                {link.label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       <button
         type="button"

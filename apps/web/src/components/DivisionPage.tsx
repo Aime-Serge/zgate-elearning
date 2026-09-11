@@ -48,6 +48,9 @@ export function DivisionPage({ division }: { division: Division }) {
               </li>
             ))}
           </ul>
+          <div className={styles.enrollCta}>
+            <Button href="/academy/enroll">Enroll now</Button>
+          </div>
         </section>
       ) : null}
 
