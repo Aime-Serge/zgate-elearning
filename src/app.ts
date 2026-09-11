@@ -8,6 +8,7 @@ import cors from "@fastify/cors";
 import secureSession from "@fastify/secure-session";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
+import helmet from "@fastify/helmet";
 import { getHealthStatus } from "./health.js";
 import { AppError } from "./lib/errors.js";
 import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
@@ -39,6 +40,33 @@ export async function build(): Promise<FastifyInstance> {
             censor: "[redacted]",
           },
         },
+  });
+
+  // Security headers on every response (docs/security/
+  // SECURITY_REQUIREMENTS.md V14: "security headers set appropriately").
+  // This API mostly serves JSON, but two routes serve real HTML/binary
+  // content directly (the certificate and deliverable download
+  // endpoints) - frame-ancestors/X-Frame-Options and nosniff matter for
+  // exactly those, and are harmless no-ops for JSON responses. CSP is
+  // scoped to "nothing should execute here" (defaultSrc 'none') since
+  // this origin never serves an interactive page of its own - the
+  // frontend's own CSP (apps/web/next.config.ts) governs the actual UI.
+  void app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    // Helmet's own default (same-origin) would block every response
+    // from being readable by the frontend's fetch() calls - this API
+    // and the frontend are two different origins *by design*
+    // (docs/architecture/API_ARCHITECTURE.md), not an accident CORP
+    // should be defending against. CORS above already governs which
+    // origins may actually read a response; this header is a separate,
+    // additional browser-side check that would otherwise silently
+    // override that and break the app for every legitimate caller.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   });
 
   // Frontend is a separate deployable (docs/architecture/API_ARCHITECTURE.md
