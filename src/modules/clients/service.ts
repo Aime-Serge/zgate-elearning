@@ -1,12 +1,14 @@
 /**
  * clients module business logic - the only module that touches the
- * clients table (docs/architecture/MODULE_ARCHITECTURE.md). Minimal by
- * design: only createClient, the one operation the lead-conversion
- * workflow needs. GET /api/clients (staff list/detail) is a separate,
- * not-yet-built slice - out of scope for this phase's lead-management
- * workflow.
+ * clients table (docs/architecture/MODULE_ARCHITECTURE.md). createClient
+ * (lead conversion) and getOwnClient (the client portal's "organization"
+ * view, FEAT-05.1's dependency) are both built. GET /api/clients (the
+ * staff-facing list, FEAT-06.1) is a separate, not-yet-built slice -
+ * that's staff Advisory tooling, out of scope for the client-portal
+ * work this module currently serves.
  */
 import type { Kysely, Transaction } from "kysely";
+import { AppError } from "../../lib/errors.js";
 import type { Database } from "../../lib/db.js";
 
 export interface CreateClientInput {
@@ -32,4 +34,37 @@ export async function createClient(
     })
     .returning("id")
     .executeTakeFirstOrThrow();
+}
+
+export interface OwnClientView {
+  id: string;
+  legalName: string;
+  primaryContactName: string | null;
+}
+
+/**
+ * The client-portal "organization" view - deliberately excludes `tin`
+ * even for the client's own record (API_CONVENTIONS.md's data-
+ * minimization note: a client checking their own status doesn't need
+ * their TIN echoed back).
+ */
+export async function getOwnClient(db: Kysely<Database>, clientId: string): Promise<OwnClientView> {
+  const client = await db
+    .selectFrom("clients")
+    .select(["id", "legal_name", "primary_contact_name", "deleted_at"])
+    .where("id", "=", clientId)
+    .executeTakeFirst();
+
+  if (!client || client.deleted_at) {
+    // The client_id on a client-role session always points at a real
+    // row by the database's own check constraint - this branch exists
+    // for defense in depth, not a reachable normal path.
+    throw new AppError("NOT_FOUND", "Not found.");
+  }
+
+  return {
+    id: client.id,
+    legalName: client.legal_name,
+    primaryContactName: client.primary_contact_name,
+  };
 }

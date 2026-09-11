@@ -12,6 +12,9 @@ import { AppError } from "./lib/errors.js";
 import { config, getSessionSecret, getSessionSalt } from "./lib/config.js";
 import { registerCrmRoutes } from "./modules/crm/routes.js";
 import { registerIdentityRoutes } from "./modules/identity/routes.js";
+import { registerClientsRoutes } from "./modules/clients/routes.js";
+import { registerAdvisoryRoutes } from "./modules/advisory/routes.js";
+import { registerDocumentsRoutes } from "./modules/documents/routes.js";
 
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -139,6 +142,9 @@ export async function build(): Promise<FastifyInstance> {
 
   registerIdentityRoutes(app);
   registerCrmRoutes(app);
+  registerClientsRoutes(app);
+  registerAdvisoryRoutes(app);
+  registerDocumentsRoutes(app);
 
   return app;
 }
