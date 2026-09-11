@@ -1,0 +1,143 @@
+.title {
+  font-size: clamp(24px, 4vw, 32px);
+  margin-bottom: var(--space-2);
+}
+
+.lede {
+  color: var(--paper-dim);
+  font-size: 15px;
+  margin-bottom: var(--space-6);
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skeletonRow {
+  height: 56px;
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.retryButton {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--paper);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  display: block;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.table td {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: 14px;
+}
+
+.table td::before {
+  content: attr(data-label);
+  font-size: 12px;
+  color: var(--paper-dim);
+}
+
+.clientLink {
+  color: var(--paper);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.badge {
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.on_track {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.attention_needed {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.no_items {
+  color: var(--paper-dim);
+}
+
+@media (min-width: 640px) {
+  .table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .table thead th {
+    text-align: left;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--paper-dim);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .table tbody tr {
+    display: table-row;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  .table tbody tr:not(:last-child) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .table td {
+    display: table-cell;
+    padding: var(--space-3);
+  }
+
+  .table td::before {
+    content: none;
+  }
+}

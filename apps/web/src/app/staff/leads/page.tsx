@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api";
 import type { LeadListItem, LeadStatus, LeadChannel } from "@/lib/leads";
 import { AddLeadForm } from "@/components/AddLeadForm";
 import { ConvertLeadForm } from "@/components/ConvertLeadForm";
+import { StaffPortalLayout } from "@/components/StaffPortalLayout";
 import styles from "./page.module.css";
 
 const STATUS_OPTIONS: LeadStatus[] = ["new", "qualified", "converted", "lost"];
@@ -64,7 +65,7 @@ export default function StaffLeadsPage() {
   const canConvert = CAN_CONVERT.includes(session.data.role);
 
   return (
-    <section className={`max ${styles.section}`}>
+    <StaffPortalLayout role={session.data.role}>
       <header className={styles.header}>
         <h1 className={styles.title}>Leads</h1>
         <p className={styles.lede}>Every inquiry that has come in, from the website and beyond.</p>
@@ -159,6 +160,6 @@ export default function StaffLeadsPage() {
           ))}
         </ul>
       ) : null}
-    </section>
+    </StaffPortalLayout>
   );
 }

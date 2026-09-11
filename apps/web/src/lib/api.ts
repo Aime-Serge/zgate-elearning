@@ -48,3 +48,28 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   return response.json() as Promise<T>;
 }
+
+/**
+ * For multipart form uploads (docs/backend/API_CONVENTIONS.md's
+ * POST /api/documents) - deliberately does not set Content-Type at all,
+ * so the browser sets `multipart/form-data; boundary=...` itself; a
+ * FormData body handed to fetch() alongside a manual Content-Type
+ * header would omit the boundary and break parsing server-side.
+ */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    if (body) {
+      throw new ApiError(body);
+    }
+    throw new Error("Something went wrong. Please try again.");
+  }
+
+  return response.json() as Promise<T>;
+}
