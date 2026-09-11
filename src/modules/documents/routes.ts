@@ -9,7 +9,7 @@ import { getSessionUser } from "../../lib/session.js";
 import { requireRole } from "../../lib/authz.js";
 import { assertClientDataAccess } from "../../lib/engagementAccess.js";
 import { logAccess } from "../../lib/audit.js";
-import { readDeliverable } from "../../lib/storage.js";
+import { readStoredFile } from "../../lib/storage.js";
 import { documentsQuerySchema, uploadFieldsSchema, ALLOWED_UPLOAD_MIME_TYPES } from "./schema.js";
 import {
   listDeliverablesForClient,
@@ -98,7 +98,7 @@ export function registerDocumentsRoutes(app: FastifyInstance): void {
       resourceId: document.id,
     });
 
-    const stream = readDeliverable(document.fileRef);
+    const stream = readStoredFile(document.fileRef);
     await reply
       .header("Content-Disposition", `attachment; filename="deliverable-${document.id}"`)
       .header("Content-Type", "application/octet-stream")

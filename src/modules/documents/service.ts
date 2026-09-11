@@ -6,7 +6,7 @@ import type { Kysely } from "kysely";
 import type { Database, DeliverableType } from "../../lib/db.js";
 import { AppError } from "../../lib/errors.js";
 import { logAccess } from "../../lib/audit.js";
-import { generateFileRef, writeDeliverable } from "../../lib/storage.js";
+import { generateFileRef, writeStoredFile } from "../../lib/storage.js";
 
 export interface DeliverableView {
   id: string;
@@ -98,7 +98,7 @@ export async function uploadDeliverable(
   input: UploadDeliverableInput,
 ): Promise<DeliverableView> {
   const fileRef = generateFileRef();
-  await writeDeliverable(fileRef, input.content);
+  await writeStoredFile(fileRef, input.content);
 
   return db.transaction().execute(async (trx) => {
     const row = await trx

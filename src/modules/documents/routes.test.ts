@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import { build } from "../../app.js";
 import { getDb } from "../../lib/db.js";
 import { hashPassword } from "../../lib/auth.js";
-import { generateFileRef, writeDeliverable } from "../../lib/storage.js";
+import { generateFileRef, writeStoredFile } from "../../lib/storage.js";
 import { createClient } from "../clients/service.js";
 import type { UserRole } from "../../lib/db.js";
 
@@ -75,7 +75,7 @@ async function createDeliverable(
 ): Promise<string> {
   if (!db) throw new Error("db not available");
   const fileRef = generateFileRef();
-  await writeDeliverable(fileRef, Buffer.from(content));
+  await writeStoredFile(fileRef, Buffer.from(content));
   writtenFileRefs.push(fileRef);
   const row = await db
     .insertInto("deliverables")

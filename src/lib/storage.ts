@@ -1,18 +1,21 @@
 /**
- * Local-disk deliverable storage - docs/architecture/ARCHITECTURE.md's
- * own pre-approved fallback ("object storage OR server-local disk with
- * automated backup, region pending the same data-residency ADR as the
- * database"). Object storage is deferred until ADR-004's hosting region
- * is decided; server-local disk is not a novel choice invented here,
- * it's the other half of that already-approved either/or. Swapping to
- * object storage later only touches this file - callers only ever see
- * `readDeliverable`/`writeDeliverable`, never a path.
+ * Local-disk file storage, shared by every module that stores a
+ * generated or uploaded document - deliverables (docs/architecture/
+ * ARCHITECTURE.md's own pre-approved fallback: "object storage OR
+ * server-local disk with automated backup, region pending the same
+ * data-residency ADR as the database") and Academy certificates (same
+ * storage need, no reason for a second implementation). Object storage
+ * is deferred until ADR-004's hosting region is decided; server-local
+ * disk is not a novel choice invented here, it's the other half of that
+ * already-approved either/or. Swapping to object storage later only
+ * touches this file - callers only ever see `readStoredFile`/
+ * `writeStoredFile`, never a path.
  *
- * `deliverables.file_ref` is an opaque storage pointer (never a path
- * the client sees or supplies) - never served with execute permissions,
- * never a directly guessable/public URL (docs/security/
+ * Every caller's `file_ref` column is an opaque storage pointer (never a
+ * path the client sees or supplies) - never served with execute
+ * permissions, never a directly guessable/public URL (docs/security/
  * SECURITY_REQUIREMENTS.md V12); the only access path is this module,
- * called from the authorization-checked download route.
+ * called from each domain's own authorization-checked download route.
  */
 import { createReadStream } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -33,7 +36,7 @@ export function generateFileRef(): string {
   return randomUUID();
 }
 
-export async function writeDeliverable(fileRef: string, content: Buffer): Promise<void> {
+export async function writeStoredFile(fileRef: string, content: Buffer): Promise<void> {
   const dir = getStorageDir();
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, fileRef), content);
@@ -45,7 +48,7 @@ export async function writeDeliverable(fileRef: string, content: Buffer): Promis
  * top of generateFileRef() never producing a traversal-capable value in
  * the first place (docs/security/SECURITY_REQUIREMENTS.md V12).
  */
-export function readDeliverable(fileRef: string): Readable {
+export function readStoredFile(fileRef: string): Readable {
   const dir = getStorageDir();
   const path = resolve(join(dir, fileRef));
   if (path !== dir && !path.startsWith(dir + sep)) {
