@@ -6,7 +6,12 @@
  * (docs/frontend/FRONTEND_SECURITY.md), which the browser only sends
  * cross-origin when explicitly told to.
  */
-const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3000";
+// Exported for the one legitimate non-fetch use: a plain <a href> link to
+// a download endpoint, where the browser (not this wrapper) makes the
+// request - Content-Disposition on the response, not a JS-driven blob
+// fetch, is what triggers the actual download (docs/backend/
+// API_CONVENTIONS.md's download endpoint).
+export const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3000";
 
 export interface ApiErrorBody {
   error: { code: string; message: string; fields?: Record<string, string>; correlationId: string };

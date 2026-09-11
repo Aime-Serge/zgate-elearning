@@ -46,6 +46,8 @@ export function LoginForm() {
       // sends the browser (docs/frontend/FRONTEND_SECURITY.md).
       if (session.role === "staff_marketing" || session.role === "staff_advisory") {
         router.push("/staff/leads");
+      } else if (session.role === "client") {
+        router.push("/portal");
       } else {
         router.push("/");
       }
