@@ -111,7 +111,10 @@ export async function requestPasswordReset(
  * logging in again, immediately; it is not a full "log this person out
  * right now" control.
  */
-export async function deactivateUser(db: Kysely<Database>, userId: string): Promise<{ userId: string }> {
+export async function deactivateUser(
+  db: Kysely<Database>,
+  userId: string,
+): Promise<{ userId: string }> {
   const result = await db
     .updateTable("users")
     .set({ deactivated_at: new Date() })
@@ -120,7 +123,11 @@ export async function deactivateUser(db: Kysely<Database>, userId: string): Prom
     .executeTakeFirst();
 
   if (result.numUpdatedRows === 0n) {
-    const existing = await db.selectFrom("users").select("id").where("id", "=", userId).executeTakeFirst();
+    const existing = await db
+      .selectFrom("users")
+      .select("id")
+      .where("id", "=", userId)
+      .executeTakeFirst();
     if (!existing) {
       throw new AppError("NOT_FOUND", "No account with that id.");
     }

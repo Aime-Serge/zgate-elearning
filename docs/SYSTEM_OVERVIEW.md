@@ -16,13 +16,13 @@ This platform was built through a long, deliberately sequential engagement — b
 
 | Module | What it does | Built in |
 |---|---|---|
-| Public website | Home, About, Advisory, Academy, Tech, Data, Contact, Academy enrollment — real approved copy only, no fabricated claims | `apps/web/src/app/*` |
-| Identity & access | Login, password recovery, session management, RBAC, admin account deactivation | `src/modules/identity/` |
-| CRM | Public lead capture, staff lead management, lead→client conversion | `src/modules/crm/` |
-| Client Portal | Authenticated clients view their own engagement status and deliverables | `apps/web/src/app/portal/`, `src/modules/clients/` |
-| Staff Platform | Client list/detail, compliance tracking, deliverable upload, reporting | `src/modules/advisory/`, `src/modules/documents/`, `src/modules/reporting/` |
-| Academy | Course/cohort/enrollment/attendance/assessment/certificate workflow | `src/modules/academy/` |
-| Data & BI | Reporting endpoints, data dictionary, data-quality signals for staff | `src/modules/reporting/` |
+| Public website | Home, About, Advisory, Academy, Tech, Data, Contact, Academy enrollment — real approved copy only, no fabricated claims | `frontend/src/app/*` |
+| Identity & access | Login, password recovery, session management, RBAC, admin account deactivation | `backend/src/modules/identity/` |
+| CRM | Public lead capture, staff lead management, lead→client conversion | `backend/src/modules/crm/` |
+| Client Portal | Authenticated clients view their own engagement status and deliverables | `frontend/src/app/portal/`, `backend/src/modules/clients/` |
+| Staff Platform | Client list/detail, compliance tracking, deliverable upload, reporting | `backend/src/modules/advisory/`, `backend/src/modules/documents/`, `backend/src/modules/reporting/` |
+| Academy | Course/cohort/enrollment/attendance/assessment/certificate workflow | `backend/src/modules/academy/` |
+| Data & BI | Reporting endpoints, data dictionary, data-quality signals for staff | `backend/src/modules/reporting/` |
 
 **Deliberately not built**, per explicit, documented scope decisions made during the engagement (not oversights): a Tech-division client-facing offering (evaluated and declined — "for a client that doesn't exist yet"), a dedicated Admin UI beyond the `admin` role's existing API capabilities, Case Studies/Insights content pages (gated on a real completed engagement that hasn't happened), Kinyarwanda/French localization (an open business question), and a client account self-service signup/invite flow — see **Known limitations** in `docs/HANDOVER.md`, which is the one gap serious enough to be a real release blocker, not a deferred nice-to-have.
 

@@ -5,11 +5,12 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    // apps/web is a separate package with its own eslint.config.mjs and
-    // its own `npm run lint` (docs/frontend/FRONTEND_ARCHITECTURE.md's
-    // structural decision) - this backend config has no business
-    // reaching into it, its build output, or its node_modules.
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "apps/**"],
+    // frontend/ is a separate package, a sibling directory now (not a
+    // subdirectory of this one), with its own eslint.config.mjs and its
+    // own `npm run lint` (docs/frontend/FRONTEND_ARCHITECTURE.md's
+    // structural decision) - `eslint .` run from within backend/ never
+    // reaches it, so no ignore entry for it is needed here.
+    ignores: ["dist/**", "node_modules/**", "coverage/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

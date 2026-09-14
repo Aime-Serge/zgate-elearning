@@ -47,7 +47,9 @@ export interface ReadinessStatus {
  * unhandled 500 that bypasses the 503 contract this endpoint exists to
  * provide.
  */
-export async function getReadinessStatus(getDbInstance: () => Kysely<Database>): Promise<ReadinessStatus> {
+export async function getReadinessStatus(
+  getDbInstance: () => Kysely<Database>,
+): Promise<ReadinessStatus> {
   try {
     const db = getDbInstance();
     await sql`select 1`.execute(db);

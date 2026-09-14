@@ -5,7 +5,7 @@
 ## Get running (containerized — the primary path)
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 docker compose up
 ```
 
@@ -16,11 +16,11 @@ Requires Docker with the `docker compose` plugin. If Docker genuinely isn't avai
 ## Repository layout
 
 ```
-.                  Backend — Fastify + Kysely + PostgreSQL
-apps/web/          Public website + portal + staff platform — Next.js
-db/migrations/     SQL schema, source of truth
-scripts/           Deploy-time tooling (migrate.mjs)
-docs/              Every phase's approved output — see docs/SYSTEM_OVERVIEW.md
+backend/               Fastify + Kysely + PostgreSQL
+backend/db/migrations/ SQL schema, source of truth
+backend/scripts/       Deploy-time tooling (migrate.mjs)
+frontend/              Public website + portal + staff platform — Next.js
+docs/                  Every phase's approved output — see docs/SYSTEM_OVERVIEW.md
 ```
 
 ## Scripts (identical shape in both packages)
@@ -40,8 +40,8 @@ docs/              Every phase's approved output — see docs/SYSTEM_OVERVIEW.md
 - **One focused commit per concern.** Not "one commit per feature" — a security fix, a doc, and a refactor touching the same area still get separate commits. `git log --oneline` is a genuinely readable history because of this; keep it that way.
 - **No fabrication, anywhere.** No invented metric, testimonial, claim, or "TODO: implement later" left silently unimplemented. If something can't be done (no DB access to verify against, a business decision pending), say so in the code comment or commit message rather than working around it silently.
 - **Comments explain *why*, not *what*.** Well-named code already says what it does. A comment earns its place only when it captures a non-obvious constraint, a workaround for a specific bug, or a decision a reader would otherwise second-guess.
-- **Error handling:** one shared `AppError` taxonomy (`src/lib/errors.ts`) — every route throws it, one Fastify error handler formats every response the same way. Never a raw stack trace or DB error string to the client; always logged server-side with a `correlationId`.
-- **Audit logging:** every read or write touching Confidential-classified data calls `logAccess`/`logAccessMany` (`src/lib/audit.ts`) — ideally inside the same transaction as the write it's auditing. **This rule is not universally followed today** — the independent security audit found the CRM leads module missing it entirely. Fix that gap the same way every other module does it, don't invent a second pattern.
+- **Error handling:** one shared `AppError` taxonomy (`backend/src/lib/errors.ts`) — every route throws it, one Fastify error handler formats every response the same way. Never a raw stack trace or DB error string to the client; always logged server-side with a `correlationId`.
+- **Audit logging:** every read or write touching Confidential-classified data calls `logAccess`/`logAccessMany` (`backend/src/lib/audit.ts`) — ideally inside the same transaction as the write it's auditing. **This rule is not universally followed today** — the independent security audit found the CRM leads module missing it entirely. Fix that gap the same way every other module does it, don't invent a second pattern.
 - **Authorization:** role checks via `requireRole`, object-level checks via `assertClientDataAccess` — always 404 for "not yours," never 403 (a 403 would leak that the record exists). Reuse these, never write a parallel check.
 
 ## Testing

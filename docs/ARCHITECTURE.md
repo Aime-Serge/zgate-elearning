@@ -8,20 +8,20 @@
 
 | Package | Location | What it is |
 |---|---|---|
-| Backend | repo root | Fastify + Kysely + PostgreSQL modular monolith, TypeScript, compiled with `tsc` |
-| Frontend | `apps/web/` | Next.js 16 (App Router), React 19, its own `package.json`/lockfile |
+| Backend | `backend/` | Fastify + Kysely + PostgreSQL modular monolith, TypeScript, compiled with `tsc` |
+| Frontend | `frontend/` | Next.js 16 (App Router), React 19, its own `package.json`/lockfile |
 
 Deliberately not an npm workspace (`docs/frontend/FRONTEND_ARCHITECTURE.md`) — a broken dependency in one package can never break the other's install or build. Deliberately a modular monolith, not microservices (`docs/architecture/ADR/ADR-001-modular-monolith.md`) — team size (one contract/intern developer at MVP) and traffic don't justify distributed-systems complexity; the module boundaries below are the seams a future extraction would cut along, not built as separate services now.
 
 ## Backend modules
 
-`src/modules/{academy,advisory,clients,crm,documents,identity,reporting}/` — each owns its own database tables, its own `routes.ts` (HTTP layer), `service.ts` (business logic, the only place that touches its tables), and `schema.ts` (Zod input validation). No module reaches into another module's tables directly; cross-module needs go through the other module's exported functions (e.g., `crm`'s lead-conversion calls `clients`' `createClient`, never writes to `clients` itself) — `docs/architecture/MODULE_ARCHITECTURE.md` is the source of truth for this rule and the module-extraction points if this ever needs to become real microservices.
+`backend/src/modules/{academy,advisory,clients,crm,documents,identity,reporting}/` — each owns its own database tables, its own `routes.ts` (HTTP layer), `service.ts` (business logic, the only place that touches its tables), and `schema.ts` (Zod input validation). No module reaches into another module's tables directly; cross-module needs go through the other module's exported functions (e.g., `crm`'s lead-conversion calls `clients`' `createClient`, never writes to `clients` itself) — `docs/architecture/MODULE_ARCHITECTURE.md` is the source of truth for this rule and the module-extraction points if this ever needs to become real microservices.
 
-Shared, cross-cutting code lives in `src/lib/`: `db.ts` (Kysely connection + full schema typing), `config.ts` (validated environment configuration), `auth.ts`/`session.ts`/`authz.ts` (authentication/session/RBAC), `engagementAccess.ts` (the one shared object-level authorization check for engagement-scoped resources), `audit.ts` (the one shared audit-log writer), `storage.ts` (file storage abstraction), `errors.ts` (the one error taxonomy every route uses), `email.ts`, `token.ts`, `fileSignature.ts`.
+Shared, cross-cutting code lives in `backend/src/lib/`: `db.ts` (Kysely connection + full schema typing), `config.ts` (validated environment configuration), `auth.ts`/`session.ts`/`authz.ts` (authentication/session/RBAC), `engagementAccess.ts` (the one shared object-level authorization check for engagement-scoped resources), `audit.ts` (the one shared audit-log writer), `storage.ts` (file storage abstraction), `errors.ts` (the one error taxonomy every route uses), `email.ts`, `token.ts`, `fileSignature.ts`.
 
 ## Data
 
-**PostgreSQL, 16 forward-only, numbered SQL migration files** (`db/migrations/`) — the schema's source of truth, applied by `scripts/migrate.mjs` (an idempotent runner with its own `schema_migrations` tracking table, used identically in CI, staging, and production). Kysely provides full compile-time type safety against that schema — `src/lib/db.ts`'s interfaces are hand-kept in sync with the migrations, not generated, and are the actual types every query in the codebase is checked against.
+**PostgreSQL, 16 forward-only, numbered SQL migration files** (`backend/db/migrations/`) — the schema's source of truth, applied by `backend/scripts/migrate.mjs` (an idempotent runner with its own `schema_migrations` tracking table, used identically in CI, staging, and production). Kysely provides full compile-time type safety against that schema — `backend/src/lib/db.ts`'s interfaces are hand-kept in sync with the migrations, not generated, and are the actual types every query in the codebase is checked against.
 
 Data classification (`docs/architecture/DATA_ARCHITECTURE.md`) tags every table Confidential/Internal/Public/Sensitive-Personal and states the handling rule for each — Confidential data (clients, compliance items, deliverables, leads) requires audit logging on access. **Verified during the independent security audit that this rule is not fully honored in code today** — see `docs/SECURITY_GUIDE.md`.
 

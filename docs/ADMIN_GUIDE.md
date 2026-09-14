@@ -17,7 +17,7 @@ An `admin` account sees every section of the staff platform (`/staff/*`), regard
 | `/staff/academy` | View cohorts, manage enrollment/attendance/assessments, issue certificates |
 | `/staff/reporting` | Advisory summary, lead pipeline, plus two admin-only sections: **Data quality** and **Data dictionary** (schema structure and cross-division completeness signals — no non-admin role has a documented need for these) |
 
-Because `admin` is authorization-equivalent to `staff_advisory` for client data today (`src/lib/engagementAccess.ts` — a documented, accepted MVP limitation, not a bug), there is no separate "admin view" of client records distinct from what an Advisory staff member sees.
+Because `admin` is authorization-equivalent to `staff_advisory` for client data today (`backend/src/lib/engagementAccess.ts` — a documented, accepted MVP limitation, not a bug), there is no separate "admin view" of client records distinct from what an Advisory staff member sees.
 
 ## Incident containment — API only, no UI
 

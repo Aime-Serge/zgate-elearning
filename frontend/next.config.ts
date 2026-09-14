@@ -13,9 +13,9 @@ function apiOrigin(): string {
 
 const nextConfig: NextConfig = {
   // Minimal, self-contained server bundle for the container's prod
-  // image (apps/web/Dockerfile) - not the full node_modules tree.
+  // image (frontend/Dockerfile) - not the full node_modules tree.
   output: "standalone",
-  // apps/web is an independent package with its own lockfile
+  // frontend/ is an independent package with its own lockfile
   // (docs/frontend/FRONTEND_ARCHITECTURE.md's structural decision - not
   // an npm workspace with the root backend package). Without this,
   // Turbopack finds the root's lockfile too and guesses the wrong

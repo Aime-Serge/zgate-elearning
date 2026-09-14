@@ -174,22 +174,25 @@ export function registerIdentityRoutes(app: FastifyInstance): void {
   // Incident containment action (docs/security/
   // INCIDENT_RESPONSE_REQUIREMENTS.md, docs/devops/INCIDENT_RUNBOOK.md) -
   // admin-only, audit-logged like every other access to a users row.
-  app.post<{ Params: { id: string } }>("/api/admin/users/:id/deactivate", async (request, reply) => {
-    const admin = requireRole("admin")(request);
-    const targetUserId = request.params.id;
-    if (!targetUserId) {
-      throw new AppError("VALIDATION_ERROR", "A user id is required.");
-    }
+  app.post<{ Params: { id: string } }>(
+    "/api/admin/users/:id/deactivate",
+    async (request, reply) => {
+      const admin = requireRole("admin")(request);
+      const targetUserId = request.params.id;
+      if (!targetUserId) {
+        throw new AppError("VALIDATION_ERROR", "A user id is required.");
+      }
 
-    const db = getDb();
-    const result = await deactivateUser(db, targetUserId);
-    await logAccess(db, {
-      userId: admin.userId,
-      action: "deactivate_user",
-      resourceType: "user",
-      resourceId: result.userId,
-    });
+      const db = getDb();
+      const result = await deactivateUser(db, targetUserId);
+      await logAccess(db, {
+        userId: admin.userId,
+        action: "deactivate_user",
+        resourceType: "user",
+        resourceId: result.userId,
+      });
 
-    await reply.send({ success: true });
-  });
+      await reply.send({ success: true });
+    },
+  );
 }

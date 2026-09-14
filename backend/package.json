@@ -1,0 +1,47 @@
+{
+  "name": "zgate-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Z-GATE Digital Platform - modular monolith backend (Fastify + Kysely + PostgreSQL, per docs/backend/BACKEND_ARCHITECTURE.md)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "start": "node dist/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^22.20.2",
+    "@types/pg": "^8.23.1",
+    "eslint": "^9.39.5",
+    "globals": "^14.0.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/multipart": "^10.1.1",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/secure-session": "^8.3.0",
+    "bcrypt": "^6.0.0",
+    "fastify": "^5.12.3",
+    "kysely": "^0.29.5",
+    "pg": "^8.23.0",
+    "zod": "^4.6.1"
+  }
+}

@@ -51,7 +51,7 @@ export async function build(): Promise<FastifyInstance> {
   // exactly those, and are harmless no-ops for JSON responses. CSP is
   // scoped to "nothing should execute here" (defaultSrc 'none') since
   // this origin never serves an interactive page of its own - the
-  // frontend's own CSP (apps/web/next.config.ts) governs the actual UI.
+  // frontend's own CSP (frontend/next.config.ts) governs the actual UI.
   void app.register(helmet, {
     contentSecurityPolicy: {
       directives: {

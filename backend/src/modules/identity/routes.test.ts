@@ -117,7 +117,11 @@ describe("identity routes", () => {
 
     const admin = await db
       .insertInto("users")
-      .values({ email: adminEmail, password_hash: await hashPassword(adminPassword), role: "admin" })
+      .values({
+        email: adminEmail,
+        password_hash: await hashPassword(adminPassword),
+        role: "admin",
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
     const target = await db

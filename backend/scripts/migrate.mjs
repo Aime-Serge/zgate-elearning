@@ -24,7 +24,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
-const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "db", "migrations");
+const migrationsDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "db",
+  "migrations",
+);
 
 async function main() {
   const databaseUrl = process.env["DATABASE_URL"];
@@ -75,7 +80,9 @@ async function main() {
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");
-        throw new Error(`Migration ${file} failed - rolled back, no later file applied: ${String(error)}`);
+        throw new Error(
+          `Migration ${file} failed - rolled back, no later file applied: ${String(error)}`,
+        );
       }
     }
 
