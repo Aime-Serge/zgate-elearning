@@ -280,7 +280,10 @@ describe("GET /api/academy/cohorts/:id/roster - trainer scoping and learner priv
       const cohortId = await createCohort(courseId, trainer.userId);
 
       for (const role of ["staff_marketing", "staff_advisory", "client"] as const) {
-        const caller = await loginAs(app, role);
+        // "client" needs a real clients row behind it (the database's own
+        // check constraint, users_client_role_requires_client_id) - every
+        // other role here can log in with no client_id at all.
+        const caller = role === "client" ? await loginAsClient(app) : await loginAs(app, role);
         const res = await app.inject({
           method: "GET",
           url: `/api/academy/cohorts/${cohortId}/roster`,

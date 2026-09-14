@@ -40,11 +40,15 @@ async function loginAs(app: FastifyInstance, role: UserRole): Promise<string> {
 
 afterEach(async () => {
   if (!db) return;
-  for (const id of createdClientIds.splice(0)) {
-    await db.deleteFrom("clients").where("id", "=", id).execute();
-  }
+  // Leads before clients - a converted lead's converted_client_id FK
+  // references clients, so deleting the client first (the order this
+  // used to run in) fails with a foreign-key-violation error the moment
+  // any test in this file actually converts a lead.
   for (const id of createdLeadIds.splice(0)) {
     await db.deleteFrom("leads").where("id", "=", id).execute();
+  }
+  for (const id of createdClientIds.splice(0)) {
+    await db.deleteFrom("clients").where("id", "=", id).execute();
   }
   for (const id of createdUserIds.splice(0)) {
     await db.deleteFrom("access_log").where("user_id", "=", id).execute();
