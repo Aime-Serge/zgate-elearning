@@ -8,6 +8,15 @@ Verification performed for release candidate **v0.1.0-rc1**, commit `8332efc` on
 
 **Production deployment gate: BLOCKED** — pending `docs/architecture/ADR/ADR-004-data-residency-hosting-region.md` (hosting region/data residency), NCSA registration completion, and DPO designation. This is a **pre-existing, already-tracked business/compliance precondition**, not a new defect surfaced by this release process — restated here because a release checklist is exactly where it needs to be visible before anyone reads "PASS" above as "safe to deploy to production today." See `docs/release/DEPLOYMENT_PLAN.md`.
 
+## Update — 2026-09-14: real CI ran for the first time
+
+A GitHub remote now exists (`github.com/Aime-Serge/z-gate`), `main` was created, `develop` was pushed, and PR #1 (`develop` → `main`) opened — closing the Branch gap below. **Real CI ran against real GitHub Actions infrastructure for the first time in this engagement's history**, and it immediately did exactly what a release checklist hopes real CI will do: it caught two genuine, previously-unexercised bugs that this sandbox's total lack of Docker/Postgres access had made impossible to find locally at any point before now.
+
+- `src/modules/academy/routes.test.ts`: a privilege-escalation test looped over roles including `"client"` but called the wrong login helper, violating the database's own `users_client_role_requires_client_id` check constraint.
+- `src/modules/crm/leads.test.ts`: `afterEach` deleted `clients` before `leads`, violating `leads.converted_client_id`'s foreign key.
+
+Both were test-file bugs, not application defects — fixed in commit `c577031`. After the fix, both CI runs on PR #1 passed cleanly: **96/96 backend tests, 4/4 frontend tests, against a real Postgres instance**, migrations applied successfully via `scripts/migrate.mjs`, and gitleaks' secrets scan completed with no findings (after one unrelated transient 504 from GitHub's own release CDN on the first attempt — resolved by re-running the job, not a code issue). This closes the Migrations and Security gaps flagged below as genuinely verified now, not just planned.
+
 ## Checklist
 
 ### Git status
@@ -20,7 +29,7 @@ Verification performed for release candidate **v0.1.0-rc1**, commit `8332efc` on
 ### Branch
 
 - [x] On `develop`, the engagement's standing integration branch.
-- [ ] **`main` (the release branch CI's `publish-images` job and `docs/devops/DEPLOYMENT_RUNBOOK.md` both assume exists) has never been created.** No git remote is configured in this environment either (`git remote -v` — empty) — CI has accordingly never executed against real GitHub infrastructure at any point in this engagement; every "CI green" statement across every phase has meant *local* lint/typecheck/test/build verification, disclosed consistently, not an actual GitHub Actions run. **Action taken this phase:** tagged the release candidate (`v0.1.0-rc1`, local, unpushed — see below) rather than fabricate a `main` branch or a push that has no remote to go to. Creating `main` and a GitHub remote is a real prerequisite for this platform's CI/CD to ever run for real, tracked as a release blocker for *automation*, not for this candidate's own correctness.
+- [x] **Resolved 2026-09-14** (see Update above): `main` created from `develop`'s root commit, GitHub remote (`github.com/Aime-Serge/z-gate`) added, both branches and the `v0.1.0-rc1` tag pushed, PR #1 opened. Real CI has now executed against real GitHub Actions infrastructure.
 
 ### Build
 
@@ -39,7 +48,7 @@ Verification performed for release candidate **v0.1.0-rc1**, commit `8332efc` on
 
 - [x] `db/migrations/` — 16 sequential, numbered SQL files, reviewed for dependency order in `docs/database/MIGRATION_STRATEGY.md` and unchanged since.
 - [x] `scripts/migrate.mjs` — syntax-checked (`node --check`), and is the one mechanism CI, staging, and production all use (switched from a naive unconditional loop this same release cycle — see `docs/devops/PRODUCTION_ARCHITECTURE.md`'s migration strategy section for why the old approach would have failed against a persistent database).
-- [ ] **Not independently re-verified against a live Postgres instance this phase** — same disclosed Docker-permission limitation as `docs/database/MIGRATION_STRATEGY.md` originally flagged. Live execution happens for real the first time this exact commit runs through CI against a real GitHub Actions runner (see Branch, above) — that first real CI run is the actual close of this gap, not asserted here in advance of it.
+- [x] **Resolved 2026-09-14** (see Update above): `scripts/migrate.mjs` ran for real against a live Postgres instance in CI and applied all 16 migrations cleanly. This also surfaced two real, previously-unexercised DB-dependent test bugs (unrelated to the migrations themselves), fixed in commit `c577031` — see the Update section for detail.
 
 ### Environment variables
 
@@ -59,7 +68,7 @@ Verification performed for release candidate **v0.1.0-rc1**, commit `8332efc` on
 
 - [x] `npm audit --audit-level=high` — **0 vulnerabilities**, both packages.
 - [x] `docs/security/SECURITY_TEST_REPORT.md` — 7 findings (3 High, 4 Medium), all remediated within that review; zero Critical. One residual, intentional, documented tradeoff (F-04's frontend CSP `'unsafe-inline'`) flagged for explicit owner sign-off, not a blocker.
-- [ ] **gitleaks was not run this phase** — no local binary available, and it runs as a GitHub Action in CI, which has never executed (see Branch). Manual pattern-based scan (above, under Git status) is the substitute verification actually performed here; the real gitleaks history-scan happens on the first real CI run.
+- [x] **Resolved 2026-09-14** (see Update above): gitleaks ran for real in CI (after one unrelated transient 504 from GitHub's own release CDN on the first attempt, resolved by re-running the job) — no secret found across commit history.
 - [x] No secret committed, printed in a log, or exposed in an error path — enforced structurally (redacted request-logging, config's never-echo-on-failure, `.gitignore`), not just by convention; re-confirmed this phase.
 
 ### Accessibility
