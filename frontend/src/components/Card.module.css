@@ -1,0 +1,36 @@
+/* docs/design/COMPONENT_SPECIFICATION.md — Cards */
+.card {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  border-left-width: 3px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: border-color 150ms ease-out;
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: var(--paper-dim);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.body {
+  font-size: 14px;
+  color: var(--paper-dim);
+}

@@ -1,0 +1,68 @@
+.header {
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-8);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 44px);
+  margin-bottom: var(--space-4);
+}
+
+.mission {
+  font-size: 18px;
+  color: var(--paper-dim);
+  max-width: 640px;
+}
+
+.section {
+  padding-top: var(--space-12);
+  padding-bottom: var(--space-12);
+  border-top: 1px solid var(--line);
+}
+
+.sectionHeading {
+  font-size: 22px;
+  margin-bottom: var(--space-6);
+}
+
+.about {
+  max-width: 720px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--paper-dim);
+}
+
+.includedList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+}
+
+.includedList li {
+  padding-left: var(--space-6);
+  position: relative;
+  font-size: 15px;
+}
+
+.dot {
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.enrollCta {
+  margin-top: var(--space-6);
+}

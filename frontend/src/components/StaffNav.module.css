@@ -1,0 +1,79 @@
+/* Mobile-first: a horizontal tab bar above the content
+   (docs/design/RESPONSIVE_RULES.md's `sm`-first discipline). Becomes a
+   left sidebar at `md` (640px+), per docs/design/COMPONENT_SPECIFICATION.md's
+   "sidebar navigation on md+". */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+}
+
+.list {
+  display: flex;
+  gap: var(--space-5);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.link {
+  font-size: 15px;
+  color: var(--paper-dim);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid transparent;
+}
+
+.link[data-active="true"] {
+  color: var(--paper);
+  border-bottom-color: var(--gate-2);
+}
+
+.logout {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--paper-dim);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .nav {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 180px;
+    flex-shrink: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--line);
+    padding-bottom: 0;
+    padding-right: var(--space-4);
+    margin-bottom: 0;
+    min-height: calc(100vh - var(--space-16) * 2);
+  }
+
+  .list {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .link {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: none;
+    border-left: 2px solid transparent;
+    border-radius: var(--radius-sm);
+  }
+
+  .link[data-active="true"] {
+    background: var(--ink-2);
+    border-left-color: var(--gate-2);
+  }
+}

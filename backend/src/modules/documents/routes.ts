@@ -1,0 +1,168 @@
+/**
+ * documents module routes. See docs/backend/API_CONVENTIONS.md's
+ * `GET /api/documents` and `GET /api/documents/:id/download` contracts.
+ */
+import type { FastifyInstance } from "fastify";
+import { getDb } from "../../lib/db.js";
+import { validationError, AppError } from "../../lib/errors.js";
+import { getSessionUser } from "../../lib/session.js";
+import { requireRole } from "../../lib/authz.js";
+import { assertClientDataAccess } from "../../lib/engagementAccess.js";
+import { logAccess } from "../../lib/audit.js";
+import { readStoredFile } from "../../lib/storage.js";
+import { matchesClaimedType } from "../../lib/fileSignature.js";
+import { documentsQuerySchema, uploadFieldsSchema, ALLOWED_UPLOAD_MIME_TYPES } from "./schema.js";
+import {
+  listDeliverablesForClient,
+  getDeliverableForDownload,
+  getEngagementClientId,
+  uploadDeliverable,
+} from "./service.js";
+
+interface MultipartField {
+  value: unknown;
+}
+
+interface MultipartFileField {
+  toBuffer: () => Promise<Buffer>;
+  mimetype: string;
+  filename: string;
+}
+
+export function registerDocumentsRoutes(app: FastifyInstance): void {
+  app.get("/api/documents", async (request, reply) => {
+    const user = getSessionUser(request);
+
+    const parsed = documentsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      throw validationError({ clientId: parsed.error.issues[0]?.message ?? "Invalid clientId." });
+    }
+
+    let clientId: string;
+    if (user.role === "client") {
+      if (!user.clientId) {
+        throw new Error("client-role session is missing clientId");
+      }
+      clientId = user.clientId;
+    } else if (user.role === "staff_advisory" || user.role === "admin") {
+      if (!parsed.data.clientId) {
+        throw validationError({ clientId: "clientId is required." });
+      }
+      clientId = parsed.data.clientId;
+    } else {
+      throw new AppError("FORBIDDEN", "You don't have permission to do that.");
+    }
+
+    assertClientDataAccess(user, clientId);
+
+    const db = getDb();
+    const documents = await listDeliverablesForClient(db, clientId);
+    await logAccess(db, {
+      userId: user.userId,
+      action: "view_deliverables_list",
+      resourceType: "client",
+      resourceId: clientId,
+    });
+
+    await reply.send({ documents });
+  });
+
+  app.get<{ Params: { id: string } }>("/api/documents/:id/download", async (request, reply) => {
+    const user = getSessionUser(request);
+    // Role-level check first: a role that can never access documents at
+    // all (e.g. staff_marketing, per RBAC_SECURITY_MODEL.md's permission
+    // matrix) gets a clean 403 here, not the object-level 404 below -
+    // that 404 exists to avoid leaking existence to a caller who *could*
+    // plausibly own this class of resource (another client, another
+    // staff member), which doesn't apply to a role excluded outright.
+    if (user.role !== "client" && user.role !== "staff_advisory" && user.role !== "admin") {
+      throw new AppError("FORBIDDEN", "You don't have permission to do that.");
+    }
+
+    const documentId = request.params.id;
+    if (!documentId) {
+      throw new AppError("VALIDATION_ERROR", "A document id is required.");
+    }
+
+    const db = getDb();
+    // The single endpoint in this catalog where an ID parameter is
+    // genuinely necessary (you have to name which document) - the
+    // object-level ownership check is the whole point of this route
+    // (docs/backend/API_CONVENTIONS.md, docs/security/THREAT_MODEL.md §7).
+    const document = await getDeliverableForDownload(db, documentId);
+    assertClientDataAccess(user, document.ownerClientId);
+
+    await logAccess(db, {
+      userId: user.userId,
+      action: "download_deliverable",
+      resourceType: "deliverable",
+      resourceId: document.id,
+    });
+
+    const stream = readStoredFile(document.fileRef);
+    await reply
+      .header("Content-Disposition", `attachment; filename="deliverable-${document.id}"`)
+      .header("Content-Type", "application/octet-stream")
+      .send(stream);
+  });
+
+  app.post("/api/documents", async (request, reply) => {
+    const user = requireRole("staff_advisory", "admin")(request);
+
+    const body = request.body as Record<string, MultipartField | MultipartFileField> | undefined;
+    const file = body?.["file"] as MultipartFileField | undefined;
+    if (!file || typeof file.toBuffer !== "function") {
+      throw validationError({ file: "A file is required." });
+    }
+
+    const fields = {
+      engagementId: (body?.["engagementId"] as MultipartField | undefined)?.value,
+      type: (body?.["type"] as MultipartField | undefined)?.value,
+    };
+    const parsed = uploadFieldsSchema.safeParse(fields);
+    if (!parsed.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (typeof key === "string") fieldErrors[key] = issue.message;
+      }
+      throw validationError(fieldErrors);
+    }
+
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.mimetype)) {
+      throw validationError({ file: "That file type isn't supported." });
+    }
+
+    let content: Buffer;
+    try {
+      content = await file.toBuffer();
+    } catch {
+      throw validationError({ file: "That file is too large." });
+    }
+
+    // The Content-Type above is only what the caller claimed - a
+    // multipart part's mimetype is trivially spoofable. Checking the
+    // file's actual leading bytes against that claim is real type
+    // validation, not just an asserted label
+    // (docs/security/SECURITY_REQUIREMENTS.md V5/V12).
+    if (!matchesClaimedType(content, file.mimetype)) {
+      throw validationError({ file: "That file's contents don't match its type." });
+    }
+
+    const db = getDb();
+    const ownerClientId = await getEngagementClientId(db, parsed.data.engagementId);
+    if (ownerClientId === null) {
+      throw new AppError("NOT_FOUND", "Not found.");
+    }
+    assertClientDataAccess(user, ownerClientId);
+
+    const deliverable = await uploadDeliverable(db, {
+      engagementId: parsed.data.engagementId,
+      type: parsed.data.type,
+      content,
+      uploadedBy: user.userId,
+    });
+
+    await reply.code(201).send(deliverable);
+  });
+}
