@@ -1,6 +1,6 @@
 # E-learning platform - local development.
 # Needs base.yml (Postgres, install): see the header there.
-#   cp elearning/backend/.env.example elearning/backend/.env
+#   cp elearning/.env.example elearning/backend/.env
 #   -> API:      http://localhost:3000   (GET /api/health, /api/ready)
 #   -> frontend: http://localhost:3003
 

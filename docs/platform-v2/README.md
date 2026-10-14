@@ -10,6 +10,8 @@
 > - Before the LMS launches, course buttons on the website open a waitlist.
 >
 > Where this set describes one shared API (02 §2–§4, 07 §1), ADR-007 takes precedence. Everything else stands. The monorepo now exists (`apps/learn-api`, `apps/ops`, pnpm + Turborepo).
+>
+> **Revision 2 (2026-10-15):** the repository is now organized by product, with enforced import boundaries (ADR-007, "Amendment"). Paths in this set map as follows: `apps/website` → `website/app`, `apps/learn` → `elearning/frontend`, `apps/learn-api` → `elearning/backend` (package `@zgate/elearning-backend`), `apps/ops` → `legacy/ops`, `packages/*` → `shared/*`.
 
 ---
 
