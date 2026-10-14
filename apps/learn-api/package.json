@@ -1,9 +1,14 @@
 {
-  "name": "zgate-platform",
-  "version": "0.0.0",
+  "name": "@zgate/learn-api",
+  "version": "0.1.0",
   "private": true,
-  "description": "Z-GATE Digital Platform - modular monolith backend (Fastify + Kysely + PostgreSQL, per docs/backend/BACKEND_ARCHITECTURE.md)",
+  "description": "Z-GATE e-learning platform API - Fastify + Kysely + PostgreSQL modular monolith (docs/platform-v2/02-TARGET-ARCHITECTURE.md)",
   "type": "module",
+  "files": [
+    "dist",
+    "scripts",
+    "db/migrations"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -17,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

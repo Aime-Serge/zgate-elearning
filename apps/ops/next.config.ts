@@ -11,18 +11,21 @@ function apiOrigin(): string {
   return process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3000";
 }
 
+// pnpm workspace root (two levels up from apps/ops). Dependencies live in
+// the root node_modules/.pnpm store, so both Turbopack's module resolution
+// and standalone output tracing must start there, not at this app folder.
+const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
 const nextConfig: NextConfig = {
   // Minimal, self-contained server bundle for the container's prod
-  // image (frontend/Dockerfile) - not the full node_modules tree.
+  // image (apps/ops/Dockerfile) - not the full node_modules tree.
   output: "standalone",
-  // frontend/ is an independent package with its own lockfile
-  // (docs/frontend/FRONTEND_ARCHITECTURE.md's structural decision - not
-  // an npm workspace with the root backend package). Without this,
-  // Turbopack finds the root's lockfile too and guesses the wrong
-  // workspace root.
+  outputFileTracingRoot: monorepoRoot,
   turbopack: {
-    root: path.dirname(fileURLToPath(import.meta.url)),
+    root: monorepoRoot,
   },
+  // Don't advertise the framework (docs/SECURITY_GUIDE.md F-7).
+  poweredByHeader: false,
   // docs/security/SECURITY_REQUIREMENTS.md V14 / docs/frontend/
   // FRONTEND_SECURITY.md's "security headers set... on every response"
   // requirement. `next/font` self-hosts Google Fonts at build time (the
