@@ -1,5 +1,5 @@
 {
-  "name": "@zgate/learn-api",
+  "name": "@zgate/elearning-backend",
   "version": "0.1.0",
   "private": true,
   "description": "Z-GATE e-learning platform API - Fastify + Kysely + PostgreSQL modular monolith (docs/platform-v2/02-TARGET-ARCHITECTURE.md)",

@@ -2,7 +2,7 @@
 # console, feature-frozen per docs/platform-v2/07-MIGRATION-PLAN.md (D2).
 #
 # Build context is the REPOSITORY ROOT:
-#   docker build -f apps/ops/Dockerfile \
+#   docker build -f legacy/ops/Dockerfile \
 #     --build-arg NEXT_PUBLIC_API_URL=https://... \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://... \
 #     -t zgate-ops .
@@ -35,16 +35,16 @@ RUN pnpm --filter @zgate/ops run build
 
 # ---- prod: Next.js standalone output ----
 # In a workspace the standalone tree mirrors the repo layout, so the
-# server entry point is apps/ops/server.js (apps/ops/next.config.ts sets
+# server entry point is legacy/ops/server.js (legacy/ops/next.config.ts sets
 # outputFileTracingRoot to the monorepo root).
 FROM node:22-slim AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --gid 1001 zgate && useradd --uid 1001 --gid zgate --shell /bin/false zgate
-COPY --from=build --chown=zgate:zgate /repo/apps/ops/.next/standalone ./
-COPY --from=build --chown=zgate:zgate /repo/apps/ops/.next/static ./apps/ops/.next/static
-COPY --from=build --chown=zgate:zgate /repo/apps/ops/public ./apps/ops/public
+COPY --from=build --chown=zgate:zgate /repo/legacy/ops/.next/standalone ./
+COPY --from=build --chown=zgate:zgate /repo/legacy/ops/.next/static ./legacy/ops/.next/static
+COPY --from=build --chown=zgate:zgate /repo/legacy/ops/public ./legacy/ops/public
 USER zgate
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
@@ -53,4 +53,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:3001/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "apps/ops/server.js"]
+CMD ["node", "legacy/ops/server.js"]

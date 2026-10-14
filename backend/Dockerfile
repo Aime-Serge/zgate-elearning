@@ -2,7 +2,7 @@
 #
 # Build context is the REPOSITORY ROOT (the pnpm lockfile and workspace
 # manifest live there):
-#   docker build -f apps/learn-api/Dockerfile -t zgate-learn-api .
+#   docker build -f elearning/backend/Dockerfile -t zgate-learn-api .
 #
 # Production image only. Local development uses infra/docker/dev.Dockerfile
 # via docker-compose.yml.
@@ -22,11 +22,11 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch --frozen-lockfile
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --offline --frozen-lockfile --filter "@zgate/learn-api..."
-RUN pnpm --filter @zgate/learn-api run build
+    pnpm install --offline --frozen-lockfile --filter "@zgate/elearning-backend..."
+RUN pnpm --filter @zgate/elearning-backend run build
 # Copies only the package's `files` (dist, scripts, db/migrations) plus
 # production dependencies - no source, tests or dev tooling.
-RUN pnpm --filter @zgate/learn-api deploy --prod --legacy /out
+RUN pnpm --filter @zgate/elearning-backend deploy --prod --legacy /out
 
 # ---- prod: minimal runtime image ----
 FROM node:22-slim AS prod
