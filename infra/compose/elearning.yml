@@ -1,0 +1,63 @@
+# E-learning platform - local development.
+# Needs base.yml (Postgres, install): see the header there.
+#   cp elearning/backend/.env.example elearning/backend/.env
+#   -> API:      http://localhost:3000   (GET /api/health, /api/ready)
+#   -> frontend: http://localhost:3003
+
+x-node: &node
+  build:
+    context: ../..
+    dockerfile: infra/docker/dev.Dockerfile
+  volumes:
+    - ../..:/repo
+    - node_modules:/repo/node_modules
+    - pnpm_store:/pnpm/store
+    - elearning_backend_node_modules:/repo/elearning/backend/node_modules
+    - elearning_frontend_node_modules:/repo/elearning/frontend/node_modules
+    - elearning_frontend_next:/repo/elearning/frontend/.next
+    - shared_config_node_modules:/repo/shared/config/node_modules
+    - shared_ui_node_modules:/repo/shared/ui/node_modules
+    - shared_contracts_node_modules:/repo/shared/contracts/node_modules
+
+services:
+  # One-shot: the e-learning database is migrated ONLY by this runner
+  # (elearning/backend/scripts/migrate.mjs) - the same one CI, staging and
+  # production use - never by Postgres' initdb directory.
+  elearning-migrate:
+    <<: *node
+    command: pnpm --filter @zgate/elearning-backend db:migrate
+    environment:
+      DATABASE_URL: postgres://zgate_elearning:zgate_elearning_dev@postgres:5432/zgate_elearning
+    depends_on:
+      postgres:
+        condition: service_healthy
+      install:
+        condition: service_completed_successfully
+
+  elearning-backend:
+    <<: *node
+    command: pnpm --filter @zgate/elearning-backend dev
+    env_file: ../../elearning/backend/.env
+    environment:
+      DATABASE_URL: postgres://zgate_elearning:zgate_elearning_dev@postgres:5432/zgate_elearning
+      # The API allows exactly one browser origin. Today its only real
+      # caller is the frozen legacy portal (legacy.yml); switch this to the
+      # e-learning frontend (http://localhost:3003) once that calls the API.
+      WEB_ORIGIN: http://localhost:3001
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      elearning-migrate:
+        condition: service_completed_successfully
+
+  elearning-frontend:
+    <<: *node
+    command: pnpm --filter @zgate/elearning-frontend dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3003
+    ports:
+      - "127.0.0.1:3003:3003"
+    depends_on:
+      install:
+        condition: service_completed_successfully
