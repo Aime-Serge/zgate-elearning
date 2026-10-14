@@ -1,0 +1,152 @@
+name: Legacy
+
+# The frozen v1 operations portal (legacy/ops). Kept building and scanned
+# so it can still be deployed if needed, but no new features land here.
+# Runs only when legacy/ or root config changes.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "legacy/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".prettierrc.json"
+      - ".dependency-cruiser.cjs"
+      - ".github/workflows/legacy.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "legacy/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".prettierrc.json"
+      - ".dependency-cruiser.cjs"
+      - ".github/workflows/legacy.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build, scan
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # gitleaks scans full history
+
+      - name: Set up pnpm (version from package.json "packageManager")
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies (lockfile only, no drift)
+        run: pnpm install --frozen-lockfile
+
+      - name: Product boundaries
+        run: pnpm lint:boundaries
+
+      - name: Lint, typecheck, build, test
+        run: pnpm turbo run lint typecheck build test --filter=@zgate/ops
+
+      - name: Dependency vulnerability scan
+        run: pnpm audit --audit-level high
+
+      - name: Secrets scan
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  image:
+    name: Image - ops
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Compute image name
+        id: image
+        run: echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-ops" >> "$GITHUB_OUTPUT"
+
+      # legacy/ops inlines its public URLs at build time (N-2). Published
+      # images need real values from repository variables.
+      - name: Resolve build arguments
+        id: args
+        env:
+          OPS_PUBLIC_API_URL: ${{ vars.OPS_PUBLIC_API_URL }}
+          OPS_PUBLIC_SITE_URL: ${{ vars.OPS_PUBLIC_SITE_URL }}
+        run: |
+          if [ "$PUBLISH" = "true" ]; then
+            if [ -z "$OPS_PUBLIC_API_URL" ] || [ -z "$OPS_PUBLIC_SITE_URL" ]; then
+              echo "::error::Set repository variables OPS_PUBLIC_API_URL and OPS_PUBLIC_SITE_URL before publishing the ops image."
+              exit 1
+            fi
+          else
+            OPS_PUBLIC_API_URL="https://api.ci.invalid"
+            OPS_PUBLIC_SITE_URL="https://ops.ci.invalid"
+          fi
+          {
+            echo "list<<EOF"
+            echo "NEXT_PUBLIC_API_URL=$OPS_PUBLIC_API_URL"
+            echo "NEXT_PUBLIC_SITE_URL=$OPS_PUBLIC_SITE_URL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: legacy/ops/Dockerfile
+          target: prod
+          load: true
+          build-args: ${{ steps.args.outputs.list }}
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+          cache-from: type=gha,scope=ops
+          cache-to: type=gha,mode=max,scope=ops
+
+      - name: Scan image (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Log in to GHCR
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        if: env.PUBLISH == 'true'
+        run: docker push --all-tags "${{ steps.image.outputs.name }}"
