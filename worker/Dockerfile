@@ -16,7 +16,9 @@ WORKDIR /repo
 # ---- build: install from the lockfile, compile, then extract a
 # production-only bundle with `pnpm deploy` ----
 FROM base AS build
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+# package.json too: Corepack reads the pinned pnpm from its "packageManager"
+# field. Without it, Corepack downloads the newest pnpm instead.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch --frozen-lockfile
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
