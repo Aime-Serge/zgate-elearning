@@ -10,6 +10,7 @@
 #   docker compose -f elearning/deploy/compose.yml --profile full up
 #     -> API:      http://localhost:3000   (GET /api/health, /api/ready)
 #     -> frontend: http://localhost:3003
+#     -> worker:   http://localhost:3005/health
 #   ... --profile full --profile legacy up
 #     -> also the frozen ops portal (legacy/ops) on http://localhost:3001
 #
@@ -32,6 +33,7 @@ x-node: &node
     - elearning_backend_node_modules:/repo/elearning/backend/node_modules
     - elearning_frontend_node_modules:/repo/elearning/frontend/node_modules
     - elearning_frontend_next:/repo/elearning/frontend/.next
+    - elearning_worker_node_modules:/repo/elearning/worker/node_modules
     - elearning_shared_config_node_modules:/repo/shared/config/node_modules
     - elearning_ops_node_modules:/repo/legacy/ops/node_modules
     - elearning_ops_next:/repo/legacy/ops/.next
@@ -66,6 +68,7 @@ services:
       pnpm install --frozen-lockfile
       --filter "@zgate/elearning-backend..."
       --filter "@zgate/elearning-frontend..."
+      --filter "@zgate/elearning-worker..."
       --filter "@zgate/ops..."
     mem_limit: 1g
 
@@ -119,6 +122,20 @@ services:
       elearning-install:
         condition: service_completed_successfully
 
+  # Background jobs (skeleton: health endpoint only, no jobs yet).
+  elearning-worker:
+    <<: *node
+    command: pnpm --filter @zgate/elearning-worker dev
+    environment:
+      PORT: "3005"
+      npm_config_node_options: --max-old-space-size=384
+    ports:
+      - "127.0.0.1:3005:3005"
+    mem_limit: 512m
+    depends_on:
+      elearning-install:
+        condition: service_completed_successfully
+
   # Frozen v1 operations portal (legacy/ops). Opt-in on top of "full": it
   # talks to this API, which is still the v1 backend.
   ops:
@@ -147,6 +164,7 @@ volumes:
   elearning_backend_node_modules:
   elearning_frontend_node_modules:
   elearning_frontend_next:
+  elearning_worker_node_modules:
   elearning_shared_config_node_modules:
   elearning_ops_node_modules:
   elearning_ops_next:

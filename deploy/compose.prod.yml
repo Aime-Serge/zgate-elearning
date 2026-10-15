@@ -50,6 +50,12 @@ services:
       elearning-backend:
         condition: service_healthy
 
+  # Background jobs. Internal only: nothing reaches it from outside.
+  elearning-worker:
+    <<: *hardening
+    image: ghcr.io/aime-serge/z-gate-elearning-worker:${ELEARNING_TAG:?set ELEARNING_TAG to a git SHA}
+    env_file: /etc/zgate/elearning-worker.env
+
   # One-off, before each rollout: the backend image ships the migration
   # runner and the migrations. Runs as the owner role.
   elearning-migrate:
