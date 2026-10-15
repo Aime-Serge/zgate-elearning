@@ -1,94 +1,106 @@
-# E-learning platform - local development.
+# E-learning platform - local development (docs/DEVELOPMENT_LOW_MEMORY.md).
 #
-#   cp elearning/.env.example elearning/backend/.env
-#   docker compose -f infra/compose/elearning.yml up
+# Hybrid mode (default): only the e-learning Postgres runs in Docker; the
+# apps run natively with `pnpm dev:elearning`.
+#   docker compose -f elearning/deploy/compose.yml up -d
+#     -> Postgres: localhost:5433 (database zgate_elearning)
+#
+# Everything in containers (heavier):
+#   cp elearning/deploy/env/dev.env.example elearning/backend/.env
+#   docker compose -f elearning/deploy/compose.yml --profile full up
 #     -> API:      http://localhost:3000   (GET /api/health, /api/ready)
 #     -> frontend: http://localhost:3003
-#   docker compose -f infra/compose/elearning.yml --profile legacy up
+#   ... --profile full --profile legacy up
 #     -> also the frozen ops portal (legacy/ops) on http://localhost:3001
 #
-# Self-contained: it brings its own Postgres and install services. The
-# website file (website.yml) defines the same two services. Keep postgres
-# identical (install differs only in the volumes it mounts, which Compose
-# unions by target), so running both files together (root docker-compose.yml)
-# merges them into one Postgres server and one install job.
-#
-# Paths are relative to this directory (infra/compose/). Every port binds to
-# 127.0.0.1 only (docs/SECURITY_GUIDE.md F-7).
+# Self-contained: this product's own Postgres, volumes and install job;
+# nothing here is shared with the website stack. Paths are relative to this
+# directory. Every port binds to 127.0.0.1 only (docs/SECURITY_GUIDE.md F-7).
+# Memory caps keep an 8 GB machine usable.
 
 x-node: &node
+  profiles: ["full"]
   build:
     context: ../..
     dockerfile: platform/scripts/dev.Dockerfile
-  # Linux dependencies stay in named volumes, never on the host mount.
+  # Linux dependencies stay in named volumes, never on the host mount. Only
+  # the packages elearning-install installs are masked - all of them.
   volumes:
     - ../..:/repo
-    - node_modules:/repo/node_modules
-    - pnpm_store:/pnpm/store
+    - elearning_root_node_modules:/repo/node_modules
+    - elearning_pnpm_store:/pnpm/store
     - elearning_backend_node_modules:/repo/elearning/backend/node_modules
     - elearning_frontend_node_modules:/repo/elearning/frontend/node_modules
     - elearning_frontend_next:/repo/elearning/frontend/.next
-    - ops_node_modules:/repo/legacy/ops/node_modules
-    - ops_next:/repo/legacy/ops/.next
-    - shared_config_node_modules:/repo/shared/config/node_modules
-    - shared_ui_node_modules:/repo/shared/ui/node_modules
-    - shared_contracts_node_modules:/repo/shared/contracts/node_modules
+    - elearning_shared_config_node_modules:/repo/shared/config/node_modules
+    - elearning_ops_node_modules:/repo/legacy/ops/node_modules
+    - elearning_ops_next:/repo/legacy/ops/.next
 
 services:
-  # --- Also defined in website.yml (see header) ------------------------
-  postgres:
+  elearning-postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: zgate
-      POSTGRES_PASSWORD: zgate_dev
-      POSTGRES_DB: zgate_dev
+      # Superuser for the init script only; the apps use the roles it creates.
+      POSTGRES_PASSWORD: elearning_superuser_dev
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     ports:
       # 5432 is the website's own Postgres (website/deploy/compose.yml).
       - "127.0.0.1:5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      # Creates zgate_website and zgate_elearning, each with its own user.
-      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+      - elearning_pgdata:/var/lib/postgresql/data
+      - ../database/postgresql.dev.conf:/etc/postgresql/postgresql.conf:ro
+      # Runs once, when the volume is first created.
+      - ../database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zgate -d zgate_dev"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
+    mem_limit: 256m
 
-  # One-shot: install workspace dependencies once, before any app starts,
-  # so two services never race to write the same node_modules volume.
-  install:
+  # One-shot: install the e-learning packages (and the frozen ops portal,
+  # which talks to this API) before the apps start.
+  elearning-install:
     <<: *node
-    command: pnpm install --frozen-lockfile
-  # -------------------------------------------------------------------------
+    command: >-
+      pnpm install --frozen-lockfile
+      --filter "@zgate/elearning-backend..."
+      --filter "@zgate/elearning-frontend..."
+      --filter "@zgate/ops..."
+    mem_limit: 1g
 
-  # One-shot: the e-learning database is migrated ONLY by this runner
+  # The e-learning database is migrated ONLY by this runner
   # (elearning/backend/scripts/migrate.mjs) - the same one CI, staging and
-  # production use - never by Postgres' initdb directory.
+  # production use - as the owner role, never by Postgres' initdb directory.
   elearning-migrate:
     <<: *node
     command: pnpm --filter @zgate/elearning-backend db:migrate
     environment:
-      DATABASE_URL: postgres://zgate_elearning:zgate_elearning_dev@postgres:5432/zgate_elearning
+      DATABASE_URL: postgres://zgate_elearning_owner:zgate_elearning_owner_dev@elearning-postgres:5432/zgate_elearning
+      npm_config_node_options: --max-old-space-size=384
+    mem_limit: 512m
     depends_on:
-      postgres:
+      elearning-postgres:
         condition: service_healthy
-      install:
+      elearning-install:
         condition: service_completed_successfully
 
   elearning-backend:
     <<: *node
     command: pnpm --filter @zgate/elearning-backend dev
-    env_file: ../../elearning/backend/.env
+    env_file: ../backend/.env
     environment:
-      DATABASE_URL: postgres://zgate_elearning:zgate_elearning_dev@postgres:5432/zgate_elearning
+      # The least-privilege app role (../database/init/01-roles.sql).
+      DATABASE_URL: postgres://zgate_elearning_app:zgate_elearning_app_dev@elearning-postgres:5432/zgate_elearning
       # The API allows exactly one browser origin. Today its only real
       # caller is the frozen legacy portal (profile "legacy"); switch this
       # to the e-learning frontend (http://localhost:3003) once that calls
       # the API.
       WEB_ORIGIN: http://localhost:3001
+      npm_config_node_options: --max-old-space-size=384
     ports:
       - "127.0.0.1:3000:3000"
+    mem_limit: 512m
     depends_on:
       elearning-migrate:
         condition: service_completed_successfully
@@ -99,15 +111,16 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3000
       NEXT_PUBLIC_SITE_URL: http://localhost:3003
+      npm_config_node_options: --max-old-space-size=768
     ports:
       - "127.0.0.1:3003:3003"
+    mem_limit: 1g
     depends_on:
-      install:
+      elearning-install:
         condition: service_completed_successfully
 
-  # Frozen v1 operations portal (legacy/ops). Opt-in: it talks to this API,
-  # which is still the v1 backend, so it lives here rather than in a
-  # Compose file of its own.
+  # Frozen v1 operations portal (legacy/ops). Opt-in on top of "full": it
+  # talks to this API, which is still the v1 backend.
   ops:
     <<: *node
     profiles: ["legacy"]
@@ -117,23 +130,23 @@ services:
       # published host ports, not compose service names.
       NEXT_PUBLIC_API_URL: http://localhost:3000
       NEXT_PUBLIC_SITE_URL: http://localhost:3001
+      npm_config_node_options: --max-old-space-size=768
     ports:
       - "127.0.0.1:3001:3001"
+    mem_limit: 1g
     depends_on:
-      install:
+      elearning-install:
         condition: service_completed_successfully
       elearning-backend:
         condition: service_started
 
 volumes:
-  pgdata:
-  node_modules:
-  pnpm_store:
+  elearning_pgdata:
+  elearning_root_node_modules:
+  elearning_pnpm_store:
   elearning_backend_node_modules:
   elearning_frontend_node_modules:
   elearning_frontend_next:
-  ops_node_modules:
-  ops_next:
-  shared_config_node_modules:
-  shared_ui_node_modules:
-  shared_contracts_node_modules:
+  elearning_shared_config_node_modules:
+  elearning_ops_node_modules:
+  elearning_ops_next:

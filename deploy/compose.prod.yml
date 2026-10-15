@@ -1,0 +1,63 @@
+# Z-GATE e-learning platform - production stack for this product only.
+# NOT DEPLOYED YET: the LMS is a skeleton (docs/platform-v2/07-MIGRATION-PLAN.md).
+#
+#   cp elearning/deploy/env/prod.backend.env.example /etc/zgate/elearning-backend.env   # fill in
+#   ELEARNING_TAG=<git sha> docker compose -f elearning/deploy/compose.prod.yml \
+#     --profile migrate run --rm elearning-migrate
+#   ELEARNING_TAG=<git sha> docker compose -f elearning/deploy/compose.prod.yml up -d --wait
+#
+# PostgreSQL is NOT in this file: it runs as its own instance on the data
+# host (or a managed in-country service), separate from the website's
+# (elearning/database/README.md - point-in-time recovery required).
+#
+# The edge proxy (platform/edge/Caddyfile, learn. host) runs in the website
+# stack today and reaches these services by name. Before go-live, put Caddy
+# and these services on a shared Docker network, and fix finding N-1 (the
+# API must trust exactly one proxy hop). Until then learn. answers "coming
+# soon".
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  elearning-backend:
+    <<: *hardening
+    image: ghcr.io/aime-serge/z-gate-elearning-backend:${ELEARNING_TAG:?set ELEARNING_TAG to a git SHA}
+    env_file: /etc/zgate/elearning-backend.env
+    # Only the proxy reaches the apps; no host port is published.
+    expose:
+      - "3000"
+    # TODO before go-live: a volume for deliverable uploads. The image runs
+    # as uid 1001 and doesn't create a writable data directory yet, so a
+    # fresh named volume would be root-owned and unwritable.
+
+  elearning-frontend:
+    <<: *hardening
+    # NEXT_PUBLIC_* URLs are baked in at build time (CI build arguments).
+    image: ghcr.io/aime-serge/z-gate-elearning-frontend:${ELEARNING_TAG:?set ELEARNING_TAG to a git SHA}
+    expose:
+      - "3003"
+    depends_on:
+      elearning-backend:
+        condition: service_healthy
+
+  # One-off, before each rollout: the backend image ships the migration
+  # runner and the migrations. Runs as the owner role.
+  elearning-migrate:
+    image: ghcr.io/aime-serge/z-gate-elearning-backend:${ELEARNING_TAG:?set ELEARNING_TAG to a git SHA}
+    env_file: /etc/zgate/elearning-backend.env
+    command: ["sh", "-c", 'DATABASE_URL="$$DATABASE_MIGRATION_URL" exec node scripts/migrate.mjs']
+    profiles: ["migrate"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

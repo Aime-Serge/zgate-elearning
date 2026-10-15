@@ -4,7 +4,7 @@
  * account-related notices" - nothing else - and explicitly defers the
  * vendor choice to implementation. Resend is used here: a simple,
  * single-API-key HTTP interface that matches the
- * EMAIL_PROVIDER_API_KEY / EMAIL_FROM_ADDRESS shape .env.example
+ * EMAIL_PROVIDER_API_KEY / EMAIL_FROM_ADDRESS shape deploy/env/dev.env.example
  * already scaffolded. Swapping providers later only touches this file.
  *
  * Without a configured API key (local dev, tests, or a deployment that
@@ -15,7 +15,7 @@
  */
 export async function sendEmail(to: string, subject: string, text: string): Promise<void> {
   const apiKey = process.env["EMAIL_PROVIDER_API_KEY"];
-  // Matches .env.example's own placeholder - the real sending domain is
+  // Matches dev.env.example's own placeholder - the real sending domain is
   // still an open decision (docs/marketing/SEO_STRATEGY.md), never
   // guessed at here.
   const from = process.env["EMAIL_FROM_ADDRESS"] ?? "no-reply@example.com";
