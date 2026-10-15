@@ -12,8 +12,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache .",
+    "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/typecheck.tsbuildinfo",
     "test": "vitest run"
   },
   "dependencies": {

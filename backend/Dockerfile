@@ -4,7 +4,7 @@
 # manifest live there):
 #   docker build -f elearning/backend/Dockerfile -t zgate-learn-api .
 #
-# Production image only. Local development uses infra/docker/dev.Dockerfile
+# Production image only. Local development uses platform/scripts/dev.Dockerfile
 # via docker-compose.yml.
 
 FROM node:22-slim AS base

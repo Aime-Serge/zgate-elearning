@@ -11,7 +11,7 @@
 | F-2 | Deactivation has no undo and no guard | Fixed in v1 now: reactivation endpoint; refuse to deactivate yourself or the last active admin. v2: memberships plus revocable sessions. | Phase 0 |
 | F-3 | Backend CSP differs from its comment | Set Helmet `useDefaults: false` with explicit directives, plus a test asserting the header. In v2 the API serves no HTML at all (certificates become PDFs behind signed URLs). | Phase 0 / 1 |
 | F-4 | `staff_advisory` has the same access as `admin` | `advisory_staff` memberships scoped to `engagement:{id}` | Phase 1 (ops) |
-| F-5 | `'unsafe-inline'` CSP | **learn / ops:** strict nonce-based CSP via Next middleware (these pages are dynamic anyway). **Website:** risk accepted with documented reasoning: no auth, no UGC ([04 §9](04-WEBSITE.md#9-security-posture)). | Phase 2 / 3 |
+| F-5 | `'unsafe-inline'` CSP | **learn / ops:** strict nonce-based CSP via Next middleware (these pages are dynamic anyway). **Website:** risk accepted with documented reasoning: no auth, no UGC ([04 §9](../../website/docs/04-WEBSITE.md#9-security-posture)). | Phase 2 / 3 |
 | F-6 | CI jobs lack a `permissions:` block | Workflow-level `permissions: contents: read` by default; widened per job | Phase 0 |
 | F-7 | `X-Powered-By`, dev ports bound to all interfaces | `poweredByHeader: false`; Compose ports bound to `127.0.0.1` | Phase 0 |
 | KI-08 / N-3 | Sessions cannot be revoked; they survive password reset | Server-side sessions; revoke on password change, deactivation or role change | Phase 1 |
@@ -42,7 +42,7 @@
 | Assignment uploads | Malware or stored XSS | v1's MIME allowlist and signature checks, plus ClamAV scanning in the worker before files become visible to trainers; always served as `attachment` from the storage domain |
 | **CMS** | Website defacement | IP restriction, MFA, publish role limited to two people, version history and rollback, no raw-HTML blocks |
 | Outbound webhooks (to the website's revalidate endpoint) | SSRF | Destinations are fixed in configuration, never user-supplied; HMAC-signed |
-| **AI features** (future) | Prompt injection; data leakage | Retrieval limited to published course content; no tools with side effects; PII redaction; output labelled as AI; DPIA ([03 §9](03-ELEARNING-PLATFORM.md#9-ai-integration-readiness-gated)) |
+| **AI features** (future) | Prompt injection; data leakage | Retrieval limited to published course content; no tools with side effects; PII redaction; output labelled as AI; DPIA ([03 §9](../../elearning/docs/03-ELEARNING-PLATFORM.md#9-ai-integration-readiness-gated)) |
 | Supply chain | Malicious dependency or action | Lockfile installs; Renovate with grouping and a minimum release age; GitHub Actions pinned to commit SHAs; Trivy image scanning; SBOM; signed images |
 
 ## 3. Control baseline (ASVS L2 mapping, summarised)

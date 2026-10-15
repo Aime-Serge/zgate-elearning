@@ -1,6 +1,6 @@
 # ADR-007: Separate Products, Separate Backends
 
-**Status:** Accepted (2026-10-14, direction from Z-GATE leadership). Amended 2026-10-15: repository layout and enforced boundaries (see "Amendment" below); the website split into a public frontend and a headless CMS (see "Second amendment").
+**Status:** Accepted (2026-10-14, direction from Z-GATE leadership). Amended 2026-10-15: repository layout and enforced boundaries (see "Amendment" below); the website split into a public frontend and a headless CMS (see "Second amendment"). The repository layout and database setup described in the amendments are superseded by ADR-008 (self-contained products); the decisions themselves stand.
 **Amends:** ADR-001 (scope of "the monolith"); `docs/platform-v2/02-TARGET-ARCHITECTURE.md` §2–§4 (which proposed one shared API)
 
 ## Context
@@ -89,7 +89,7 @@ The seam, all server to server (visitors' browsers never call the CMS):
 Consequences:
 
 - **Smaller blast radius:** a bug in the public site can't reach the database. It can only make anonymous CMS reads and token-guarded lead submissions.
-- **Two deployables:** two images plus the migration image, always deployed at the same commit. Two shared secrets to rotate together (`docs/runbooks/WEBSITE_DEPLOY.md`).
+- **Two deployables:** two images plus the migration image, always deployed at the same commit. Two shared secrets to rotate together (`website/docs/WEBSITE_DEPLOY.md`).
 - **A runtime dependency:** pages not yet cached, and form submissions, need the CMS up. Cached pages keep serving if it's down, and the frontend's `/api/ready` reports the CMS's state.
 - **Cache-clearing is now a network call:** a lost webhook leaves pages stale until the hourly revalidation. Both sides log failures.
 - **Site settings' staff inbox address** (`leadNotificationEmail`) became staff-readable only, since the frontend now reads settings over the public REST API.
