@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * ESLint preset for Next.js apps - the same rules website/app and
+ * ESLint preset for Next.js apps - the same rules website/frontend, website/backend and
  * legacy/ops use (Next's core-web-vitals + TypeScript configs).
  *
  *   import next from "@zgate/config/eslint/next";

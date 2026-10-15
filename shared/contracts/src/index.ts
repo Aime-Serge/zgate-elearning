@@ -9,7 +9,7 @@
  */
 import { z } from "zod";
 
-/** Same rule the website CMS enforces on slugs (website/app/src/fields/common.ts). */
+/** Same rule the website CMS enforces on slugs (website/backend/src/fields/common.ts). */
 export const courseSlugSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers and single hyphens.");

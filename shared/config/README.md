@@ -13,4 +13,4 @@ Shared presets so every Z-GATE package formats, type-checks and lints the same w
 
 Path options (`outDir`, `rootDir`, `paths`, `include`) stay in each package's own tsconfig, because TypeScript resolves them relative to the file that declares them.
 
-The presets mirror the settings the existing apps (`website/app`, `elearning/backend`, `legacy/ops`) already use. Those apps keep their own config files for now, so adopting the presets there is a separate, reviewable change rather than a side effect of this package.
+The presets mirror the settings the existing apps (`website/frontend`, `website/backend`, `elearning/backend`, `legacy/ops`) already use. Those apps keep their own config files for now, so adopting the presets there is a separate, reviewable change rather than a side effect of this package.
