@@ -1,0 +1,85 @@
+import type { Metadata } from "next";
+import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Providers } from "./providers";
+import { company, elevatorPitch } from "@/lib/content";
+import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+// Domain is an open decision (docs/marketing/SEO_STRATEGY.md - zgaterw.com
+// vs zgate.co) — never hardcoded here. Falls back to localhost in dev so
+// metadataBase is always valid without guessing production's real domain.
+const siteUrl = process.env["NEXT_PUBLIC_SITE_URL"] ?? "http://localhost:3001";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: `${company.legalName} — ${company.motto}`,
+    template: `%s — ${company.legalName}`,
+  },
+  description: elevatorPitch,
+  openGraph: {
+    title: `${company.legalName} — ${company.motto}`,
+    description: elevatorPitch,
+    type: "website",
+  },
+};
+
+// Organization structured data - only fields already approved as real
+// (docs/business/BUSINESS_ALIGNMENT.md's confirmed address, the real
+// registered contact info) via `company` in lib/content.ts. No
+// aggregateRating, review, or other fabricable field is included.
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: company.legalName,
+  alternateName: company.tradingName,
+  url: siteUrl,
+  email: company.email,
+  telephone: company.phone,
+  address: company.registeredAddress,
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
+    >
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <Providers>
+          <Header />
+          <main id="main">{children}</main>
+          <Footer />
+        </Providers>
+      </body>
+    </html>
+  );
+}
