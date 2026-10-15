@@ -1,6 +1,6 @@
 # E-learning platform
 
-Z-GATE Academy Online: the learning platform the website sends learners to. The backend works today (it is the v1 API, carried over); the frontend is a deployable skeleton until the LMS build starts (`docs/platform-v2/03-ELEARNING-PLATFORM.md`).
+Z-GATE Academy Online: the learning platform the website sends learners to. The backend works today (it is the v1 API, carried over); the frontend is a deployable skeleton until the LMS build starts (`elearning/docs/03-ELEARNING-PLATFORM.md`).
 
 | Folder      | Package                     | What it is                                                                       |
 | ----------- | --------------------------- | -------------------------------------------------------------------------------- |

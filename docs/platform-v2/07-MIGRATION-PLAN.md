@@ -106,7 +106,7 @@ Effort is in **person-weeks (pw)**, assuming **one senior full-stack lead plus o
 | **0. Stabilize and decide** | Fix F-1, F-2, F-6, F-7, N-1 in v1. Interim N-2 fix (build args). Decisions D1–D6 (§4). Start payment-aggregator onboarding/KYC. Start NCSA/DPO/DPIA. Monorepo skeleton with v1 moved in, **all 97 tests still green**. | CI green on the monorepo; decision log signed; aggregator application submitted | 2–3 pw |
 | **1. Platform foundations** | Identity v2 (sessions, memberships, sign-up/OTP/MFA/invites); audit events; outbox and pg-boss worker; S3 storage; notifications; `/api/v1` + OpenAPI + contracts; generated DB types; Caddy routing; **staging environment with monitoring, backups and a restore drill** | Staging is live; login, sign-up and MFA work end to end; the first restore drill passes; alerts fire in a test | 6–8 pw |
 | **2. Website v2** *(parallel with Phase 1)* | `apps/website` + `apps/cms`; content seeded; commercial-readiness fixes; privacy and terms pages; consent on forms; analytics; Lighthouse and axe budgets; CDN deployment | **Website live in production**: real leads flow into CRM with audit and attribution. Highest commercial value for the least risk. | 3–5 pw |
-| **3. LMS MVP** | The 16 MVP capabilities ([03 §3](03-ELEARNING-PLATFORM.md#3-scope-by-release)): catalog/versions, lessons and video, progress, quizzes, MoMo/Airtel checkout, certificates and verification, trainer console, admin, privacy tooling; Academy data migration; k6 load test; external pentest; DPIA signed | First paid cohort of Course 1 runs fully on `learn.{domain}`; SLOs met during the cohort; zero open High/Critical security findings | 14–20 pw |
+| **3. LMS MVP** | The 16 MVP capabilities ([03 §3](../../elearning/docs/03-ELEARNING-PLATFORM.md#3-scope-by-release)): catalog/versions, lessons and video, progress, quizzes, MoMo/Airtel checkout, certificates and verification, trainer console, admin, privacy tooling; Academy data migration; k6 load test; external pentest; DPIA signed | First paid cohort of Course 1 runs fully on `learn.{domain}`; SLOs met during the cohort; zero open High/Critical security findings | 14–20 pw |
 | **4. LMS V1** | B2B organizations and seats; assignments; Kinyarwanda UI; PWA offline; WhatsApp notifications; learning analytics; discount codes | One corporate client cohort; the Kinyarwanda UI used by real learners | 10–16 pw |
 | **5. Ops portal and AI pilots** | Execute D2 (keep, replace or retire the ops portal, including the CR-8 invite flow for Advisory clients if kept); AI pilot #1 (captions) once D11 is decided | Per decision | TBD |
 
@@ -116,7 +116,7 @@ Effort is in **person-weeks (pw)**, assuming **one senior full-stack lead plus o
 
 | ID | Decision | Recommendation | Blocks |
 |---|---|---|---|
-| D1 | Build a focused LMS, or adopt one (Moodle / SaaS)? | **Build** on the existing stack, with Moodle as an explicit stopgap if Phase 3 can't be staffed ([03 §1](03-ELEARNING-PLATFORM.md#1-product-definition)) | Phase 3 |
+| D1 | Build a focused LMS, or adopt one (Moodle / SaaS)? | **Build** on the existing stack, with Moodle as an explicit stopgap if Phase 3 can't be staffed ([03 §1](../../elearning/docs/03-ELEARNING-PLATFORM.md#1-product-definition)) | Phase 3 |
 | D2 | Future of the ops portal (client portal + staff CRM/compliance) | **Keep, moved and feature-frozen.** Revisit when the first Advisory client actually needs portal access; at that point build only the invite flow (CR-8). Replacing it with SaaS conflicts with residency. | Phase 5 |
 | D3 | Hosting region / residency (ADR-004) | **Option 3, hybrid,** as in [02 §9](02-TARGET-ARCHITECTURE.md#9-data-residency-map-adr-004-option-3-hybrid-made-concrete), with legal counsel | Phase 1 production provisioning |
 | D4 | Production domain (`zgaterw.com` or `zgate.co`, open in `docs/marketing/SEO_STRATEGY.md`) | Decide now; HSTS preload, email sending domain and SEO all depend on it | Phase 2 |
@@ -152,7 +152,7 @@ Each will become `docs/adr/ADR-0xx-*.md` with Status: Proposed, then Accepted on
 | Payment aggregator onboarding (KYC, contracts) takes weeks | High | High | Apply in Phase 0. Keep manual "mark as paid" (MoMo merchant code or bank transfer) as the launch fallback. |
 | Compliance gates (NCSA, DPO, DPIA) are still open at launch | Medium | High | Start in Phase 0; track as launch-blocking items; this document makes them explicit |
 | Single-developer bus factor | High | High | D10; pair on identity and payments; runbooks; CODEOWNERS |
-| LMS scope creep | High | Medium | The MVP list in [03 §3](03-ELEARNING-PLATFORM.md#3-scope-by-release) is fixed; anything else goes to V1 by default |
+| LMS scope creep | High | Medium | The MVP list in [03 §3](../../elearning/docs/03-ELEARNING-PLATFORM.md#3-scope-by-release) is fixed; anything else goes to V1 by default |
 | Regressions while moving v1 code | Medium | Medium | Move first, refactor second; the 97 existing tests must stay green at every step |
 | Video costs grow faster than revenue | Medium | Medium | 240p start, data-saver default, monthly cost-per-learner review ([06 §7](06-DEVOPS-RELIABILITY.md#7-cost-discipline)) |
 | Kinyarwanda quality (UI or AI) | Medium | Medium | Native-speaker review is a release gate for every `rw` string |

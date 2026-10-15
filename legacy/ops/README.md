@@ -7,8 +7,8 @@ Only security fixes and changes forced by the repository layout land here. Decis
 ## Quick reference
 
 ```bash
-cp elearning/.env.example elearning/backend/.env
-docker compose -f infra/compose/elearning.yml --profile legacy up   # http://localhost:3001
+cp elearning/deploy/env/dev.env.example elearning/backend/.env
+docker compose -f elearning/deploy/compose.yml --profile full --profile legacy up   # http://localhost:3001
 
 # or on the host, with the e-learning API running:
 pnpm --filter @zgate/ops dev        # http://localhost:3001 (3000 is the API)

@@ -2,7 +2,7 @@
   "name": "@zgate/elearning-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Z-GATE Academy Online - e-learning frontend (skeleton; docs/platform-v2/03-ELEARNING-PLATFORM.md)",
+  "description": "Z-GATE Academy Online - e-learning frontend (skeleton; elearning/docs/03-ELEARNING-PLATFORM.md)",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3003",

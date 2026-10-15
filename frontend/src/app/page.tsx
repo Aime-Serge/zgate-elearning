@@ -1,6 +1,6 @@
 /**
  * Placeholder. The LMS itself (catalog, enrollment, lessons, quizzes,
- * certificates) is Phase 3 - docs/platform-v2/03-ELEARNING-PLATFORM.md.
+ * certificates) is Phase 3 - elearning/docs/03-ELEARNING-PLATFORM.md.
  */
 export default function Home() {
   return (

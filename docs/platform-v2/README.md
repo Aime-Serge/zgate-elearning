@@ -14,6 +14,8 @@
 > **Revision 2 (2026-10-15):** the repository is now organized by product, with enforced import boundaries (ADR-007, "Amendment"). Paths in this set map as follows: `apps/website` → `website/app`, `apps/learn` → `elearning/frontend`, `apps/learn-api` → `elearning/backend` (package `@zgate/elearning-backend`), `apps/ops` → `legacy/ops`, `packages/*` → `shared/*`.
 >
 > **Revision 3 (2026-10-15):** the website is now two apps: `website/frontend` (public site, no database) and `website/backend` (Payload CMS, headless), talking over HTTP (ADR-007, "Second amendment"). Where this set says `apps/website` or `website/app`, read: public pages → `website/frontend`; CMS, data and leads → `website/backend`.
+>
+> **Revision 4 (2026-10-15):** each product is self-contained: its own Postgres, `database/`, `deploy/` and `docs/` folders, plus an e-learning worker; `platform/` is the only shared runtime ([ADR-008](../architecture/ADR/ADR-008-self-contained-products.md)). The product documents 03 and 04 moved to `elearning/docs/` and `website/docs/`; the links below point there.
 
 ---
 
@@ -77,8 +79,8 @@ The decisions that matter most:
 |---|---|---|
 | [01](01-CURRENT-STATE-ASSESSMENT.md) | Current-state assessment | What is there, how good it is, criterion by criterion, with evidence |
 | [02](02-TARGET-ARCHITECTURE.md) | Target architecture | Product boundaries, topology, backend contexts, identity, the website → LMS hand-off, technology choices, scale path, residency |
-| [03](03-ELEARNING-PLATFORM.md) | E-learning platform | Roles, MVP / V1 / V2 scope, domain model, payments, low-bandwidth design, certificates, AI readiness, NFRs, KPIs |
-| [04](04-WEBSITE.md) | Corporate website | IA, CMS model and guardrails, forms and consent, SEO, performance budget, security, accessibility |
+| [03](../../elearning/docs/03-ELEARNING-PLATFORM.md) | E-learning platform | Roles, MVP / V1 / V2 scope, domain model, payments, low-bandwidth design, certificates, AI readiness, NFRs, KPIs |
+| [04](../../website/docs/04-WEBSITE.md) | Corporate website | IA, CMS model and guardrails, forms and consent, SEO, performance budget, security, accessibility |
 | [05](05-SECURITY-COMPLIANCE.md) | Security and compliance | Fate of every open finding, LMS threat model, ASVS L2 controls, audit design, secure pipeline, Law N° 058/2021 gates |
 | [06](06-DEVOPS-RELIABILITY.md) | DevOps and reliability | Environments, infrastructure, CI/CD, SLOs, resilience patterns, backup/DR, observability, cost |
 | [07](07-MIGRATION-PLAN.md) | Migration plan | Target repo layout, disposition of every v1 part, phased roadmap with effort, decisions, ADRs, risks |

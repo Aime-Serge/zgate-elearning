@@ -14,7 +14,7 @@
 - **Moodle** is self-hostable in Rwanda, which satisfies residency.
 - **Hosted SaaS LMSs** (Thinkific, TalentLMS, LearnWorlds and similar) would be faster to launch.
 
-Both fall short on the same points: weak mobile-money support, no integration with Z-GATE's CRM and Advisory, poor low-bandwidth behaviour, and (for SaaS) personal data held offshore, which conflicts with ADR-004. **The fallback is explicit:** if the team cannot staff the build (see [07 §3](07-MIGRATION-PLAN.md#3-phased-roadmap)), run Course 1 on a self-hosted Moodle as a stopgap. Keep the website hand-off contract in [02 §6](02-TARGET-ARCHITECTURE.md#6-how-the-website-hands-off-to-the-lms) unchanged, so the LMS can be swapped later.
+Both fall short on the same points: weak mobile-money support, no integration with Z-GATE's CRM and Advisory, poor low-bandwidth behaviour, and (for SaaS) personal data held offshore, which conflicts with ADR-004. **The fallback is explicit:** if the team cannot staff the build (see [07 §3](../../docs/platform-v2/07-MIGRATION-PLAN.md#3-phased-roadmap)), run Course 1 on a self-hosted Moodle as a stopgap. Keep the website hand-off contract in [02 §6](../../docs/platform-v2/02-TARGET-ARCHITECTURE.md#6-how-the-website-hands-off-to-the-lms) unchanged, so the LMS can be swapped later.
 
 ## 2. Roles
 
@@ -34,7 +34,7 @@ Both fall short on the same points: weak mobile-money support, no integration wi
 
 | # | Capability | Notes |
 |---|---|---|
-| 1 | Sign-up and login: email or phone + OTP; verification; password reset; sessions that can be revoked | [02 §5](02-TARGET-ARCHITECTURE.md#5-identity-sessions-and-access-control) |
+| 1 | Sign-up and login: email or phone + OTP; verification; password reset; sessions that can be revoked | [02 §5](../../docs/platform-v2/02-TARGET-ARCHITECTURE.md#5-identity-sessions-and-access-control) |
 | 2 | Public catalog: course pages, outcomes, syllabus, price, upcoming cohorts | Also feeds the website through `/api/v1/public/catalog` |
 | 3 | Enrollment in a cohort or self-paced course | Idempotent; stores attribution (UTM) |
 | 4 | Checkout with MTN MoMo / Airtel Money; free courses; manual "mark as paid" by an admin for cash or bank transfer | §6 |
@@ -195,7 +195,7 @@ Candidates in order of value against risk:
 
 | Criterion | Target |
 |---|---|
-| **Security** | OWASP ASVS 4.0 **Level 2**. MFA for all staff roles. Details in [05](05-SECURITY-COMPLIANCE.md). |
+| **Security** | OWASP ASVS 4.0 **Level 2**. MFA for all staff roles. Details in [05](../../docs/platform-v2/05-SECURITY-COMPLIANCE.md). |
 | **Performance** | API p95 under 300 ms and p99 under 800 ms for learner reads. LCP under 2.5 s, INP under 200 ms and CLS under 0.1 at p75 on mid-range Android over 4G. |
 | **Reliability** | SLO **99.5%** monthly availability for learn (about 3.6 h of error budget a month). RPO 15 min, RTO 4 h. |
 | **Scalability** | Launch: about 1,000 registered learners, 200 concurrent, a 50-learner spike at cohort start. Must scale to 10× by adding API instances, with no redesign (stateless API, object storage, queue). |
@@ -214,7 +214,7 @@ Candidates in order of value against risk:
 - Training bundled into Advisory retainers (cross-division)
 - A free short intro lesson or mini-course as a lead magnet
 
-**KPIs**, instrumented from day one through the analytics funnel in [02 §6](02-TARGET-ARCHITECTURE.md#6-how-the-website-hands-off-to-the-lms):
+**KPIs**, instrumented from day one through the analytics funnel in [02 §6](../../docs/platform-v2/02-TARGET-ARCHITECTURE.md#6-how-the-website-hands-off-to-the-lms):
 
 | KPI | Definition |
 |---|---|
