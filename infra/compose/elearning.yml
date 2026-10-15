@@ -19,7 +19,7 @@
 x-node: &node
   build:
     context: ../..
-    dockerfile: infra/docker/dev.Dockerfile
+    dockerfile: platform/scripts/dev.Dockerfile
   # Linux dependencies stay in named volumes, never on the host mount.
   volumes:
     - ../..:/repo

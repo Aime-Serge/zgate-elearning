@@ -33,4 +33,4 @@ pnpm --filter @zgate/elearning-frontend dev
 ## Before it goes live
 
 - The API allows one browser origin (`WEB_ORIGIN`). Today that is the legacy ops portal; switch it to the e-learning frontend once the frontend calls the API.
-- Behind Caddy, the API's client-IP handling must trust exactly one proxy hop. See the comment in `infra/proxy/Caddyfile` (`learn.` block).
+- Behind Caddy, the API's client-IP handling must trust exactly one proxy hop. See the comment in `platform/edge/Caddyfile` (`learn.` block).
