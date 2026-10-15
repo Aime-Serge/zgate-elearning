@@ -50,7 +50,9 @@ export const config = parseConfig(process.env);
 export function getDatabaseUrl(): string {
   const url = process.env["DATABASE_URL"];
   if (!url) {
-    throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill in a real value.");
+    throw new Error(
+      "DATABASE_URL is not set. Copy elearning/deploy/env/dev.env.example to .env and fill in a real value.",
+    );
   }
   return url;
 }
@@ -82,7 +84,7 @@ export function getSessionSecret(): string {
   const secret = process.env["SESSION_SECRET"];
   if (!secret || secret.length < 32) {
     throw new Error(
-      "SESSION_SECRET is not set or is shorter than 32 characters. Copy .env.example to .env and fill in a real value.",
+      "SESSION_SECRET is not set or is shorter than 32 characters. Copy elearning/deploy/env/dev.env.example to .env and fill in a real value.",
     );
   }
   return secret;
@@ -95,7 +97,7 @@ export function getSessionSalt(): string {
   const salt = process.env["SESSION_SALT"];
   if (!salt || salt.length !== 16) {
     throw new Error(
-      "SESSION_SALT is not set or is not exactly 16 characters. Copy .env.example to .env and fill in a real value.",
+      "SESSION_SALT is not set or is not exactly 16 characters. Copy elearning/deploy/env/dev.env.example to .env and fill in a real value.",
     );
   }
   return salt;

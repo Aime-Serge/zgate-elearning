@@ -45,6 +45,12 @@ async function main() {
   await client.connect();
 
   try {
+    // Serialize concurrent runs (two deploys, or a deploy racing a manual
+    // run): the second runner waits here, then finds nothing pending.
+    // Session-level lock, released automatically when the connection
+    // closes in the finally block below.
+    await client.query("SELECT pg_advisory_lock(hashtext('zgate:schema_migrations'))");
+
     // One tracking table, created if this is the first run against this
     // database. Filename is the primary key - the same one-logical-
     // change-per-file, sequentially-numbered convention MIGRATION_STRATEGY.md

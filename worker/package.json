@@ -1,0 +1,29 @@
+{
+  "name": "@zgate/elearning-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Z-GATE e-learning background jobs (skeleton): one process for work that must not run inside an API request",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "lint": "eslint --cache .",
+    "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/typecheck.tsbuildinfo",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@zgate/config": "workspace:*",
+    "eslint": "^9.39.5",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}
