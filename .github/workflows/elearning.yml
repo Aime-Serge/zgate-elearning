@@ -1,7 +1,7 @@
 name: E-learning
 
-# The e-learning platform (elearning/frontend, elearning/backend) and the
-# shared code it may use. Runs only when something it depends on changes -
+# The e-learning platform (elearning/frontend, elearning/backend,
+# elearning/worker) and the shared code it may use. Runs only when something it depends on changes -
 # a website-only change never triggers it (ADR-007 product separation).
 #
 # Actions are pinned to full commit SHAs (docs/platform-v2/
@@ -14,7 +14,6 @@ on:
       - "elearning/**"
       - "shared/**"
       - "platform/**"
-      - "infra/compose/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -28,7 +27,6 @@ on:
       - "elearning/**"
       - "shared/**"
       - "platform/**"
-      - "infra/compose/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -76,6 +74,11 @@ jobs:
         with:
           fetch-depth: 0 # gitleaks scans full history
 
+      # The .npmrc heap ceiling is for 8 GB development machines; CI keeps
+      # Node's default (docs/DEVELOPMENT_LOW_MEMORY.md).
+      - name: Use CI's default Node heap
+        run: rm -f .npmrc
+
       - name: Set up pnpm (version from package.json "packageManager")
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
@@ -120,6 +123,7 @@ jobs:
         include:
           - { app: elearning-backend, dir: elearning/backend, target: prod }
           - { app: elearning-frontend, dir: elearning/frontend, target: prod }
+          - { app: elearning-worker, dir: elearning/worker, target: prod }
     env:
       PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:

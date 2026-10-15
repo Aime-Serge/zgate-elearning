@@ -1,8 +1,10 @@
 name: Legacy
 
-# The frozen v1 operations portal (legacy/ops). Kept building and scanned
-# so it can still be deployed if needed, but no new features land here.
-# Runs only when legacy/ or root config changes.
+# The frozen v1 operations portal (legacy/ops). Build-only: it must keep
+# building and its image must stay scanned so it can still be deployed
+# until it is retired (ADR-008), but no new code lands here, so lint,
+# typecheck and tests no longer run. Runs only when legacy/ or root config
+# changes.
 
 on:
   push:
@@ -37,7 +39,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Lint, typecheck, test, build, scan
+    name: Build, scan
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
@@ -46,6 +48,11 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0 # gitleaks scans full history
+
+      # The .npmrc heap ceiling is for 8 GB development machines; CI keeps
+      # Node's default (docs/DEVELOPMENT_LOW_MEMORY.md).
+      - name: Use CI's default Node heap
+        run: rm -f .npmrc
 
       - name: Set up pnpm (version from package.json "packageManager")
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -62,8 +69,8 @@ jobs:
       - name: Product boundaries
         run: pnpm lint:boundaries
 
-      - name: Lint, typecheck, build, test
-        run: pnpm turbo run lint typecheck build test --filter=@zgate/ops
+      - name: Build
+        run: pnpm turbo run build --filter=@zgate/ops
 
       - name: Dependency vulnerability scan
         run: pnpm audit --audit-level high
