@@ -18,7 +18,9 @@ WORKDIR /repo
 FROM base AS build
 # Lockfile + workspace manifest first, so the dependency download layer
 # is cached until dependencies actually change.
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+# package.json too: Corepack reads the pinned pnpm from its "packageManager"
+# field. Without it, Corepack downloads the newest pnpm instead.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch --frozen-lockfile
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
