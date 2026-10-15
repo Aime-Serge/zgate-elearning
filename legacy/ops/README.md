@@ -1,17 +1,21 @@
-# Z-GATE Public Website
+# Z-GATE Operations Portal (legacy, frozen)
 
-Next.js (App Router) frontend — see `docs/frontend/` at the repo root for the full architecture (route map, component/state architecture, security, testing) and `docs/devops/DEVELOPMENT_ENVIRONMENT.md` for how to run this alongside the backend.
+`@zgate/ops`: the v1 web app (public site, client portal and staff console), talking to `elearning/backend`, which is still the v1 API. Kept running until its replacement exists. **Nothing in this repository may import from `legacy/`** (`pnpm lint:boundaries`).
+
+Only security fixes and changes forced by the repository layout land here. Decision D2 in `docs/platform-v2/07-MIGRATION-PLAN.md` keeps it frozen until the first Advisory client needs portal access, then revisits it. The v1 architecture docs are in `docs/frontend/`.
 
 ## Quick reference
 
-Prefer `docker compose up` from the repo root over running this package standalone — see the root `README.md`. If running directly:
-
 ```bash
-npm ci
-cp .env.example .env.local
-npm run dev      # http://localhost:3001 (not 3000 - that's the backend)
-npm run lint
-npm run typecheck
-npm test
-npm run build
+cp elearning/.env.example elearning/backend/.env
+docker compose -f infra/compose/elearning.yml --profile legacy up   # http://localhost:3001
+
+# or on the host, with the e-learning API running:
+pnpm --filter @zgate/ops dev        # http://localhost:3001 (3000 is the API)
+pnpm --filter @zgate/ops lint
+pnpm --filter @zgate/ops typecheck
+pnpm --filter @zgate/ops test
+pnpm --filter @zgate/ops build
 ```
+
+CI: `.github/workflows/legacy.yml`. Image: `docker build -f legacy/ops/Dockerfile --build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=… .` from the repository root.

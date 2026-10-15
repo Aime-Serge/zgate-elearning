@@ -20,8 +20,8 @@ legacy/
   ops/              Frozen v1 portal: public site + client portal + staff console (D2)
 infra/
   docker/           Shared development image
-  compose/          Local stacks (base, website, elearning, legacy) + production website
-  proxy/            Caddyfile (www., cms., learn.)
+  compose/          Local stacks: website.yml, elearning.yml (ops portal: --profile legacy)
+  proxy/            Caddyfile (www., cms., learn.) + production website stack
 docs/               platform-v2/ (current plan), runbooks/, and every earlier phase's output
 ```
 
@@ -43,13 +43,13 @@ Documents written before 2026-10-15 use older paths: `backend/` and `frontend/` 
 
 ```bash
 cp elearning/.env.example elearning/backend/.env
-docker compose up                       # everything
+docker compose up                       # both products (add --profile legacy for the ops portal)
 # one product only:
-docker compose -f infra/compose/base.yml -f infra/compose/website.yml up
-docker compose -f infra/compose/base.yml -f infra/compose/elearning.yml up
+docker compose -f infra/compose/website.yml up
+docker compose -f infra/compose/elearning.yml up   # add --profile legacy for the ops portal
 ```
 
-- Website `http://localhost:3002` (CMS at `/admin`) · e-learning frontend `http://localhost:3003` · e-learning API `http://localhost:3000` (`GET /api/health`, `GET /api/ready`) · legacy ops `http://localhost:3001` · Postgres `localhost:5432`
+- Website `http://localhost:3002` (CMS at `/admin`) · e-learning frontend `http://localhost:3003` · e-learning API `http://localhost:3000` (`GET /api/health`, `GET /api/ready`) · legacy ops `http://localhost:3001` (`--profile legacy`) · Postgres `localhost:5432`
 - One Postgres server, two databases: `zgate_website` and `zgate_elearning`, each with its own user (`infra/compose/postgres-init/`).
 - `install` and the per-product migration jobs run once before the apps start. The e-learning database is migrated only by `elearning/backend/scripts/migrate.mjs`, the same runner CI and production use.
 

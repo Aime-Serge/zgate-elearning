@@ -11,7 +11,7 @@ Z-GATE Academy Online: the learning platform the website sends learners to. The 
 
 ```bash
 cp elearning/.env.example elearning/backend/.env
-docker compose -f infra/compose/base.yml -f infra/compose/elearning.yml up
+docker compose -f infra/compose/elearning.yml up   # --profile legacy adds the ops portal
 # -> frontend http://localhost:3003, API http://localhost:3000 (GET /api/health, /api/ready)
 ```
 

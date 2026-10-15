@@ -5,7 +5,7 @@
 --
 -- Postgres runs this once, when the data volume is first created. On an
 -- older volume, run it manually or reset with `docker compose down -v`.
--- Passwords are dev-only throwaway values, like POSTGRES_PASSWORD in base.yml.
+-- Passwords are dev-only throwaway values, like POSTGRES_PASSWORD in website.yml and elearning.yml.
 
 CREATE USER zgate_website WITH PASSWORD 'zgate_website_dev';
 CREATE DATABASE zgate_website OWNER zgate_website;
