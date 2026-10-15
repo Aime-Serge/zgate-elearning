@@ -1,34 +1,33 @@
 # E-learning platform
 
-Z-GATE Academy Online: the learning platform the website sends learners to. The backend works today (it is the v1 API, carried over); the frontend is a deployable skeleton until the LMS build starts (`elearning/docs/03-ELEARNING-PLATFORM.md`).
+Z-GATE Academy Online: the learning platform the website sends learners to. The API works today (it is the v1 API, carried over); the frontend and the worker are deployable skeletons until the LMS build starts (`elearning/docs/03-ELEARNING-PLATFORM.md`). The API is planned to move to Django; see ADR-008.
 
-| Folder      | Package                     | What it is                                                                       |
-| ----------- | --------------------------- | -------------------------------------------------------------------------------- |
-| `frontend/` | `@zgate/elearning-frontend` | Next.js 16 skeleton: one placeholder page, security headers, `noindex`           |
-| `backend/`  | `@zgate/elearning-backend`  | Fastify + Kysely + PostgreSQL API. Also serves the frozen ops portal (`legacy/`) |
+| Folder      | Package / content           | What it is                                                                                                            |
+| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `frontend/` | `@zgate/elearning-frontend` | Next.js 16 skeleton: one placeholder page, security headers, `noindex`                                                |
+| `backend/`  | `@zgate/elearning-backend`  | Fastify + Kysely + PostgreSQL API, with the schema in `db/migrations/`. Also serves the frozen ops portal (`legacy/`) |
+| `worker/`   | `@zgate/elearning-worker`   | Background jobs (skeleton: runner + `/health`); planned jobs in its README                                            |
+| `database/` | -                           | Roles SQL, Postgres configs, `backup.sh` / `restore.sh`, backup target (PITR, at most 15 minutes of loss)             |
+| `deploy/`   | -                           | `compose.yml` (local), `compose.prod.yml` (not deployed yet), `env/` templates                                        |
+| `docs/`     | -                           | Product definition and scope (`03-ELEARNING-PLATFORM.md`)                                                             |
 
-## Run it
-
-```bash
-cp elearning/.env.example elearning/backend/.env
-docker compose -f infra/compose/elearning.yml up   # --profile legacy adds the ops portal
-# -> frontend http://localhost:3003, API http://localhost:3000 (GET /api/health, /api/ready)
-```
-
-Or on the host, with a Postgres you provide in `DATABASE_URL`:
+## Run it (hybrid mode: Postgres in Docker, apps native)
 
 ```bash
-pnpm db:migrate
-pnpm --filter @zgate/elearning-backend dev
-pnpm --filter @zgate/elearning-frontend dev
+docker compose -f elearning/deploy/compose.yml up -d    # Postgres on localhost:5433
+cp elearning/deploy/env/dev.env.example elearning/backend/.env
+pnpm db:migrate:elearning                               # as the owner role
+pnpm dev:elearning                                      # API :3000, frontend :3003, worker :3005/health
 ```
+
+Everything in containers instead: `docker compose -f elearning/deploy/compose.yml --profile full up` (add `--profile legacy` for the ops portal on :3001).
 
 ## Boundaries
 
-- Imports only from `shared/`. Never from `website/` or `legacy/` (`pnpm lint:boundaries`).
-- Its own database (`zgate_elearning`) and DB user. The schema is changed **only** by `backend/scripts/migrate.mjs` running the forward-only SQL files in `backend/db/migrations/`, locally, in CI and in production alike.
-- CI: `.github/workflows/elearning.yml`, triggered by changes under `elearning/`, `shared/` or root config.
-- Images, built from the repository root: `docker build -f elearning/backend/Dockerfile .` and `docker build -f elearning/frontend/Dockerfile --build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=… .` (the frontend refuses to build without both).
+- Imports only from `shared/`. Never from `website/` or `legacy/` (`pnpm lint:boundaries`). The worker never imports the API's code.
+- Its own Postgres and database (`zgate_elearning`). The schema is changed **only** by `backend/scripts/migrate.mjs` running the forward-only SQL files in `backend/db/migrations/`, locally, in CI and in production alike.
+- CI: `.github/workflows/elearning.yml`, triggered by changes under `elearning/`, `shared/`, `platform/` or root config.
+- Images, built from the repository root: `docker build -f elearning/backend/Dockerfile .`, `docker build -f elearning/worker/Dockerfile .` and `docker build -f elearning/frontend/Dockerfile --build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=… .` (the frontend refuses to build without both).
 
 ## Before it goes live
 
