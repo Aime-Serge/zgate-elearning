@@ -43,7 +43,8 @@ services:
       POSTGRES_PASSWORD: zgate_dev
       POSTGRES_DB: zgate_dev
     ports:
-      - "127.0.0.1:5432:5432"
+      # 5432 is the website's own Postgres (website/deploy/compose.yml).
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Creates zgate_website and zgate_elearning, each with its own user.
