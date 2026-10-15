@@ -1,6 +1,6 @@
 # ADR-007: Separate Products, Separate Backends
 
-**Status:** Accepted (2026-10-14, direction from Z-GATE leadership). Amended 2026-10-15: repository layout and enforced boundaries (see "Amendment" below).
+**Status:** Accepted (2026-10-14, direction from Z-GATE leadership). Amended 2026-10-15: repository layout and enforced boundaries (see "Amendment" below); the website split into a public frontend and a headless CMS (see "Second amendment").
 **Amends:** ADR-001 (scope of "the monolith"); `docs/platform-v2/02-TARGET-ARCHITECTURE.md` §2–§4 (which proposed one shared API)
 
 ## Context
@@ -19,7 +19,7 @@ Each product owns its backend and its data:
 
 | Product | Backend | Data |
 |---|---|---|
-| Website (`website/app`) | **Payload CMS running inside the Next.js app.** One deployable for pages, the content admin, the lead inbox and staff login. | Its own Postgres database: content, media metadata, leads, consents |
+| Website (`website/frontend` + `website/backend`) | **Payload CMS, headless** (`website/backend`): content admin, REST API, lead intake, lead inbox and staff login. The public pages are a separate Next.js app (`website/frontend`) that reads the CMS over HTTP. *(Originally one deployable with Payload embedded; see the second amendment.)* | Its own Postgres database: content, media metadata, leads, consents |
 | E-learning (`elearning/frontend` + `elearning/backend`) | The v1 Fastify backend, evolved into the LMS API (ADR-001 still applies *within* it) | Its own Postgres database: identity, LMS, commerce, plus v1 ops tables until D2 is decided |
 
 Rules:
@@ -50,7 +50,8 @@ Rules:
 The first implementation put every deployable under `apps/` and shared code under `packages/`. That layout let any app import any other, and one CI workflow ran for every change. The repository is now organized by product, so the separation above is visible in the tree and checked by tooling:
 
 ```text
-website/app                   the website (Next.js + Payload, one deployable)
+website/app                   the website (Next.js + Payload, one deployable;
+                              split later - see the second amendment)
 elearning/frontend            the LMS frontend (skeleton)
 elearning/backend             the LMS API (the v1 backend)
 shared/{config,ui,contracts}  the only code both products may use
@@ -65,5 +66,30 @@ Added rules:
 
 Deliberately unchanged:
 
-- The website stays **one deployable** (`website/app`), not a frontend/backend pair. Payload runs inside Next.js; splitting them would add a network hop and a second deployment with no isolation gain.
+- ~~The website stays **one deployable** (`website/app`), not a frontend/backend pair.~~ Reversed by the second amendment below.
 - The CMS keeps its own host (`ADMIN_URL`, e.g. `cms.`), separate from the public site, so its login cookie never reaches public pages.
+
+## Second amendment (2026-10-15): the website as a public frontend and a headless CMS
+
+Leadership asked for the same shape in both products: a frontend and a backend. The first amendment kept the website as one deployable because Payload runs inside Next.js and splitting adds a network hop. That argument underrated two things: the public pages and the CMS already ran on separate hosts (rule above), and the split gives the public site no database access at all.
+
+```text
+website/frontend   @zgate/website-frontend   public site (www.), Next.js, no database
+website/backend    @zgate/website-backend    Payload CMS, headless (cms.): admin, REST API,
+                                             lead intake, lead inbox; the only database user
+```
+
+The seam, all server to server (visitors' browsers never call the CMS):
+
+1. **Content:** the frontend reads published documents anonymously over the CMS's REST API, so the collections' "published only" read rules apply exactly as before. It holds no CMS or database credentials.
+2. **Leads:** `POST /api/lead-intake` with a bearer token (`LEAD_INTAKE_TOKEN`). The frontend keeps the checks only it can make (honeypot, per-visitor rate limits: it sees the visitor's address). The CMS re-validates, enforces the privacy-notice and course rules, stores the lead and notifies staff. The leads collection still refuses creates over its REST API.
+3. **Cache:** on publish, the CMS sends an HMAC-SHA256-signed webhook (`REVALIDATE_SECRET`, 5-minute replay window) to the frontend's `/api/revalidate`. Caddy doesn't route that path from the internet.
+4. **Code:** the frontend may import only `@zgate/website-backend/contracts` (generated content types, lead schemas, division slugs, webhook signing). dependency-cruiser enforces this, keeps the contracts free of other CMS code, and keeps Payload's runtime out of the frontend. The rich-text React renderer, whose runtime imports only `react`, is the one Payload package the frontend uses.
+
+Consequences:
+
+- **Smaller blast radius:** a bug in the public site can't reach the database. It can only make anonymous CMS reads and token-guarded lead submissions.
+- **Two deployables:** two images plus the migration image, always deployed at the same commit. Two shared secrets to rotate together (`docs/runbooks/WEBSITE_DEPLOY.md`).
+- **A runtime dependency:** pages not yet cached, and form submissions, need the CMS up. Cached pages keep serving if it's down, and the frontend's `/api/ready` reports the CMS's state.
+- **Cache-clearing is now a network call:** a lost webhook leaves pages stale until the hourly revalidation. Both sides log failures.
+- **Site settings' staff inbox address** (`leadNotificationEmail`) became staff-readable only, since the frontend now reads settings over the public REST API.

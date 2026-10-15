@@ -1,7 +1,7 @@
 /**
  * Z-GATE brand tokens - one source for both products' look. Values are
  * the approved Brand Identity Guide colours (docs/design/DESIGN_SYSTEM.md),
- * as used in website/app/src/app/(site)/globals.css. Components come
+ * as used in website/frontend/src/app/(site)/globals.css. Components come
  * later; the website keeps its own CSS until it adopts this package.
  */
 export const colors = {
