@@ -11,11 +11,11 @@ cp elearning/deploy/env/dev.env.example elearning/backend/.env
 docker compose -f elearning/deploy/compose.yml --profile full --profile legacy up   # http://localhost:3001
 
 # or on the host, with the e-learning API running:
-pnpm --filter @zgate/ops dev        # http://localhost:3001 (3000 is the API)
-pnpm --filter @zgate/ops lint
-pnpm --filter @zgate/ops typecheck
-pnpm --filter @zgate/ops test
-pnpm --filter @zgate/ops build
+pnpm dev        # http://localhost:3001 (3000 is the API)
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
-CI: `.github/workflows/legacy.yml`. Image: `docker build -f legacy/ops/Dockerfile --build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=… .` from the repository root.
+It is its own pnpm workspace (`package.json`, `pnpm-workspace.yaml`, lockfile): run the commands above inside `legacy/ops/`, after `pnpm install`. CI: `.github/workflows/legacy.yml`. Image, with this folder as the context: `docker build -f legacy/ops/Dockerfile --build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=… legacy/ops`.

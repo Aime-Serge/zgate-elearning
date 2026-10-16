@@ -1,46 +1,44 @@
 name: E-learning
 
-# The e-learning platform (elearning/frontend, elearning/backend,
-# elearning/worker) and the shared code it may use. Runs only when something it depends on changes -
-# a website-only change never triggers it (ADR-007 product separation).
+# The e-learning platform workspace (elearning/): API (backend), frontend,
+# worker, the packages it owns, its contract tests and journey tests. Runs
+# only when elearning/ changes. When a website package e-learning relies on
+# changes, the website's CI runs this workspace's contract tests
+# ("Consumer contracts").
 #
-# Actions are pinned to full commit SHAs (docs/platform-v2/
-# 05-SECURITY-COMPLIANCE.md §5). Images are pushed to GHCR from main only.
+# Actions are pinned to full commit SHAs (tag in the trailing comment) so a
+# moved or compromised tag can't change what runs here
+# (docs/platform-v2/05-SECURITY-COMPLIANCE.md §5). Images are pushed to
+# GHCR from main only.
 
 on:
   push:
     branches: [develop, main]
     paths:
       - "elearning/**"
-      - "shared/**"
-      - "platform/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".prettierrc.json"
-      - ".dependency-cruiser.cjs"
       - ".github/workflows/elearning.yml"
   pull_request:
     branches: [develop, main]
     paths:
       - "elearning/**"
-      - "shared/**"
-      - "platform/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".prettierrc.json"
-      - ".dependency-cruiser.cjs"
       - ".github/workflows/elearning.yml"
 
+# Least privilege by default; jobs widen only what they need (F-6).
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: elearning
+
+env:
+  OASDIFF_VERSION: 1.33.0
+  # sha256 of oasdiff_1.33.0_linux_amd64.tar.gz, from the release's checksums.txt.
+  OASDIFF_SHA256: 43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247
 
 jobs:
   verify:
@@ -71,8 +69,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0 # gitleaks scans full history
 
       # The .npmrc heap ceiling is for 8 GB development machines; CI keeps
       # Node's default (docs/DEVELOPMENT_LOW_MEMORY.md).
@@ -81,34 +77,76 @@ jobs:
 
       - name: Set up pnpm (version from package.json "packageManager")
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: elearning/package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: pnpm
+          cache-dependency-path: elearning/pnpm-lock.yaml
 
       - name: Install dependencies (lockfile only, no drift)
         run: pnpm install --frozen-lockfile
 
-      - name: Product boundaries
+      - name: Boundaries
         run: pnpm lint:boundaries
 
       # The only thing that migrates the e-learning database:
-      # elearning/backend/scripts/migrate.mjs, as in staging/production.
+      # backend/scripts/migrate.mjs, as in staging/production.
       - name: Migrate the e-learning database
-        run: pnpm db:migrate
+        run: pnpm --filter @zgate/elearning-backend db:migrate
 
-      - name: Lint, typecheck, build, test (e-learning + shared)
-        run: pnpm turbo run lint typecheck build test --filter='./elearning/*' --filter='./shared/*'
+      - name: Build
+        run: pnpm -r run build
+
+      - name: Lint
+        run: pnpm -r run lint
+
+      - name: Typecheck
+        run: pnpm -r run typecheck
+
+      # Includes the contract-compatibility checks
+      # (packages/elearning-contracts/compat) and tests/contracts.
+      - name: Test
+        run: pnpm -r run test
+
+      - name: Formatting
+        run: pnpm format
 
       - name: Dependency vulnerability scan
         run: pnpm audit --audit-level high
 
-      - name: Secrets scan
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+  # Safeguard 1 (elearning/README.md, "Contracts"): /api/v1 accepts
+  # additive changes only. Compares openapi/v1.yaml with main's.
+  api-breaking-changes:
+    name: API breaking changes (oasdiff)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Install oasdiff (checksum-verified)
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/oasdiff.tar.gz" \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          echo "${OASDIFF_SHA256}  $RUNNER_TEMP/oasdiff.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/oasdiff.tar.gz" -C "$RUNNER_TEMP" oasdiff
+
+      - name: oasdiff breaking (base branch vs this pull request)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          SPEC: packages/elearning-contracts/openapi/v1.yaml
+        run: |
+          if ! git show "$BASE:elearning/$SPEC" > "$RUNNER_TEMP/base.yaml" 2>/dev/null; then
+            echo "::notice::$SPEC is new in this pull request; nothing to compare yet."
+            exit 0
+          fi
+          "$RUNNER_TEMP/oasdiff" breaking "$RUNNER_TEMP/base.yaml" "$SPEC" --fail-on ERR
 
   images:
     name: Image - ${{ matrix.app }}
@@ -121,9 +159,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { app: elearning-backend, dir: elearning/backend, target: prod }
-          - { app: elearning-frontend, dir: elearning/frontend, target: prod }
-          - { app: elearning-worker, dir: elearning/worker, target: prod }
+          - { app: elearning-backend, dir: backend, target: prod }
+          - { app: elearning-frontend, dir: frontend, target: prod }
+          - { app: elearning-worker, dir: worker, target: prod }
     env:
       PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
@@ -168,8 +206,8 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: .
-          file: ${{ matrix.dir }}/Dockerfile
+          context: elearning
+          file: elearning/${{ matrix.dir }}/Dockerfile
           target: ${{ matrix.target }}
           load: true
           build-args: ${{ steps.args.outputs.list }}
@@ -185,7 +223,7 @@ jobs:
           image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          trivyignores: .trivyignore
+          trivyignores: elearning/.trivyignore
           exit-code: "1"
 
       - name: Log in to GHCR
@@ -199,3 +237,68 @@ jobs:
       - name: Push image
         if: env.PUBLISH == 'true'
         run: docker push --all-tags "${{ steps.image.outputs.name }}"
+
+  # Safeguard 2 (elearning/README.md, "Contracts"): a pull request that
+  # changes the contract package the website relies on also runs the
+  # website's contract tests against it. Shows as "skipped" otherwise.
+  consumer-contracts-plan:
+    name: Consumer contracts - plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.changed.outputs.run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Did the contract package the website relies on change?
+        id: changed
+        working-directory: .
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git diff --quiet "$BASE"...HEAD -- elearning/packages/elearning-contracts; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "@zgate/elearning-contracts did not change."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  consumer-contracts:
+    name: Consumer contracts (website)
+    needs: consumer-contracts-plan
+    if: needs.consumer-contracts-plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Use CI's default Node heap
+        run: rm -f .npmrc
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: website/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: website/pnpm-lock.yaml
+
+      # The website's contract tests install @zgate/elearning-contracts as a
+      # file: dependency, so this install copies this pull request's
+      # version. They render the frontend's course page, so it is installed
+      # too.
+      - name: Install the website contract tests
+        run: pnpm install --frozen-lockfile --filter "@zgate/website-contract-tests..." --filter "@zgate/website-frontend..." --filter "@zgate/website-backend..."
+
+      - name: Run the website contract tests against this pull request
+        run: pnpm --filter @zgate/website-contract-tests test

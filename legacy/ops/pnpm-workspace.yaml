@@ -1,0 +1,31 @@
+# The frozen v1 operations portal, as its own single-package workspace.
+# Nothing in the website or e-learning workspaces depends on it.
+packages:
+  - "."
+
+# Supply-chain guard (docs/platform-v2/05-SECURITY-COMPLIANCE.md §5): never
+# resolve a package version published less than 14 days ago.
+minimumReleaseAge: 20160
+
+# Forced versions of transitive dependencies. Each entry: reason, and when
+# to remove it.
+overrides:
+  # Carried over from the old root workspace, where it applied to every
+  # package: jsdom (test environment only) has always resolved undici 7.29.1
+  # here, although it asks for 8.x. Kept so this split changes no resolved
+  # version. Remove in a dependency-update pull request that lets jsdom take
+  # undici 8 and re-runs the tests.
+  undici: 7.29.1
+
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 stack-exhaustion DoS via deeply nested patterns. No
+    # fixed version exists. Reached only through lint tooling
+    # (eslint-config-next > fast-glob > micromatch) on trusted glob
+    # patterns - never on user input, never in a runtime image.
+    - GHSA-vfj7-8cjw-p6xm
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver

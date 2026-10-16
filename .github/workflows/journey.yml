@@ -1,0 +1,105 @@
+name: Customer journey
+
+# Safeguard 3: the full customer journey across both products, in a real
+# browser (elearning/e2e/journeys):
+#
+#   website course page -> Enroll link -> LMS sign-up -> sandbox payment
+#   -> lesson -> certificate -> public /verify/[code]
+#
+# NO PRODUCTION DEPLOY OF EITHER PRODUCT HAPPENS UNLESS THIS PASSES AGAINST
+# STAGING for the versions being deployed (website/README.md and
+# elearning/README.md, "Releases").
+#
+# Staging doesn't exist yet (hosting decision pending). Steps that need
+# features not built yet are `test.fixme` with the reason, so they show as
+# skipped, never as passed. Run it by hand (Actions -> Customer journey ->
+# Run workflow), or from a deploy workflow with
+# `uses: ./.github/workflows/journey.yml`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Website base URL (default - repository variable STAGING_SITE_URL)
+        required: false
+      learn_url:
+        description: LMS base URL (default - repository variable STAGING_LEARN_URL)
+        required: false
+      course_slug:
+        description: A published course to walk through
+        required: false
+        default: ebm-digital-invoicing
+  workflow_call:
+    inputs:
+      site_url:
+        type: string
+        required: true
+      learn_url:
+        type: string
+        required: true
+      course_slug:
+        type: string
+        required: false
+        default: ebm-digital-invoicing
+
+permissions:
+  contents: read
+
+concurrency:
+  group: journey-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  journey:
+    name: Journey (staging)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: elearning
+    env:
+      JOURNEY_SITE_URL: ${{ inputs.site_url || vars.STAGING_SITE_URL }}
+      JOURNEY_LEARN_URL: ${{ inputs.learn_url || vars.STAGING_LEARN_URL }}
+      JOURNEY_COURSE_SLUG: ${{ inputs.course_slug || 'ebm-digital-invoicing' }}
+    steps:
+      - name: Require target URLs
+        working-directory: .
+        run: |
+          if [ -z "$JOURNEY_SITE_URL" ] || [ -z "$JOURNEY_LEARN_URL" ]; then
+            echo "::error::No staging URLs. Pass site_url and learn_url, or set the repository variables STAGING_SITE_URL and STAGING_LEARN_URL."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Use CI's default Node heap
+        run: rm -f .npmrc
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: elearning/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: elearning/pnpm-lock.yaml
+
+      - name: Install the journey tests
+        run: pnpm install --frozen-lockfile --filter "@zgate/elearning-journeys..."
+
+      - name: Install Chromium
+        run: pnpm --filter @zgate/elearning-journeys exec playwright install --with-deps chromium
+
+      - name: Walk the journey
+        run: pnpm --filter @zgate/elearning-journeys journey
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: journey-report
+          path: elearning/e2e/playwright-report
+          retention-days: 14

@@ -3,31 +3,19 @@ name: Legacy
 # The frozen v1 operations portal (legacy/ops). Build-only: it must keep
 # building and its image must stay scanned so it can still be deployed
 # until it is retired (ADR-008), but no new code lands here, so lint,
-# typecheck and tests no longer run. Runs only when legacy/ or root config
-# changes.
+# typecheck and tests no longer run. legacy/ops is its own pnpm workspace;
+# this runs only when it changes.
 
 on:
   push:
     branches: [develop, main]
     paths:
       - "legacy/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".prettierrc.json"
-      - ".dependency-cruiser.cjs"
       - ".github/workflows/legacy.yml"
   pull_request:
     branches: [develop, main]
     paths:
       - "legacy/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".prettierrc.json"
-      - ".dependency-cruiser.cjs"
       - ".github/workflows/legacy.yml"
 
 permissions:
@@ -36,6 +24,10 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: legacy/ops
 
 jobs:
   verify:
@@ -46,8 +38,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0 # gitleaks scans full history
 
       # The .npmrc heap ceiling is for 8 GB development machines; CI keeps
       # Node's default (docs/DEVELOPMENT_LOW_MEMORY.md).
@@ -56,29 +46,24 @@ jobs:
 
       - name: Set up pnpm (version from package.json "packageManager")
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: legacy/ops/package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: pnpm
+          cache-dependency-path: legacy/ops/pnpm-lock.yaml
 
       - name: Install dependencies (lockfile only, no drift)
         run: pnpm install --frozen-lockfile
 
-      - name: Product boundaries
-        run: pnpm lint:boundaries
-
       - name: Build
-        run: pnpm turbo run build --filter=@zgate/ops
+        run: pnpm run build
 
       - name: Dependency vulnerability scan
         run: pnpm audit --audit-level high
-
-      - name: Secrets scan
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   image:
     name: Image - ops
@@ -127,7 +112,7 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: .
+          context: legacy/ops
           file: legacy/ops/Dockerfile
           target: prod
           load: true
@@ -144,7 +129,7 @@ jobs:
           image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          trivyignores: .trivyignore
+          trivyignores: legacy/ops/.trivyignore
           exit-code: "1"
 
       - name: Log in to GHCR

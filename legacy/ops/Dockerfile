@@ -1,11 +1,11 @@
 # Z-GATE operations portal (Next.js standalone) - client portal + staff
 # console, feature-frozen per docs/platform-v2/07-MIGRATION-PLAN.md (D2).
 #
-# Build context is the REPOSITORY ROOT:
+# Build context is THIS FOLDER (legacy/ops, its own pnpm workspace):
 #   docker build -f legacy/ops/Dockerfile \
 #     --build-arg NEXT_PUBLIC_API_URL=https://... \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://... \
-#     -t zgate-ops .
+#     -t zgate-ops legacy/ops
 #
 # NEXT_PUBLIC_* values are inlined into the client bundle, sitemap and CSP
 # at build time, so this image is specific to one environment
@@ -32,13 +32,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch --frozen-lockfile
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --offline --frozen-lockfile --filter "@zgate/ops..."
-RUN pnpm --filter @zgate/ops run build
+    pnpm install --offline --frozen-lockfile
+RUN pnpm run build
 
 # ---- prod: Next.js standalone output ----
-# In a workspace the standalone tree mirrors the repo layout, so the
-# server entry point is legacy/ops/server.js (legacy/ops/next.config.ts sets
-# outputFileTracingRoot to the monorepo root).
+# The app is its own workspace root, so the standalone tree has server.js
+# at its top (next.config.ts sets outputFileTracingRoot to this folder).
 FROM node:22-slim AS prod
 # Base-image hardening: Debian security updates, and no package managers
 # in the image - it runs with `node` only. (Trivy flagged outdated Debian
@@ -54,9 +53,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --gid 1001 zgate && useradd --uid 1001 --gid zgate --shell /bin/false zgate
-COPY --from=build --chown=zgate:zgate /repo/legacy/ops/.next/standalone ./
-COPY --from=build --chown=zgate:zgate /repo/legacy/ops/.next/static ./legacy/ops/.next/static
-COPY --from=build --chown=zgate:zgate /repo/legacy/ops/public ./legacy/ops/public
+COPY --from=build --chown=zgate:zgate /repo/.next/standalone ./
+COPY --from=build --chown=zgate:zgate /repo/.next/static ./.next/static
+COPY --from=build --chown=zgate:zgate /repo/public ./public
 USER zgate
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
@@ -65,4 +64,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:3001/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "legacy/ops/server.js"]
+CMD ["node", "server.js"]

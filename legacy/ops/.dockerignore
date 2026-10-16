@@ -1,0 +1,12 @@
+# Build context is this folder. Keep it small and free of secrets.
+**/node_modules
+.next
+coverage
+.env
+.env.*
+!.env.example
+# Local dev only: the low-memory Node heap ceiling must not apply to image
+# builds.
+.npmrc
+.eslintcache
+*.log
