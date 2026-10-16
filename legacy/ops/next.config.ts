@@ -11,10 +11,9 @@ function apiOrigin(): string {
   return process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3000";
 }
 
-// pnpm workspace root (two levels up from legacy/ops). Dependencies live in
-// the root node_modules/.pnpm store, so both Turbopack's module resolution
-// and standalone output tracing must start there, not at this app folder.
-const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+// This app is its own pnpm workspace (legacy/ops/pnpm-workspace.yaml), so
+// Turbopack's module resolution and standalone output tracing start here.
+const monorepoRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   // Minimal, self-contained server bundle for the container's prod

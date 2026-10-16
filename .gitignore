@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+.next/
+out/
+
+# Packed packages (pnpm pack, consumer-contracts job)
+*.tgz
+
+# Environment - never commit real secrets/config
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS (the shared low-memory editor settings are committed)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local-disk deliverable storage (backend lib/storage.ts dev/test fallback) -
+# never real client documents in version control.
+storage/
+
+# Vitest / test artifacts
+.vitest-cache/
+
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# ESLint cache (lint --cache)
+.eslintcache
+
+# Playwright artifacts
+test-results/
+playwright-report/

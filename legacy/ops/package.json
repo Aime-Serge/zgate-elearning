@@ -2,6 +2,11 @@
   "name": "@zgate/ops",
   "version": "0.1.0",
   "private": true,
+  "description": "Z-GATE v1 operations portal (client portal + staff console). Feature-frozen; its own pnpm workspace",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=22.12"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3001",

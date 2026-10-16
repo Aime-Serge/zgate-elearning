@@ -1,0 +1,10 @@
+{
+  "extends": "@zgate/config/tsconfig/library.json",
+  "compilerOptions": {
+    // Source imports name the .ts file (what bundlers such as Next.js
+    // resolve in this workspace); the published dist/ gets .js specifiers,
+    // so it runs under plain Node ESM in other products.
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src", "compat"]
+}

@@ -37,12 +37,14 @@ Then run `wsl --shutdown` and restart Docker Desktop. 2.5 GB is enough for one p
 
 ```bash
 # Website
-docker compose -f website/deploy/compose.yml up -d       # Postgres only (localhost:5432)
-pnpm dev:website                                         # CMS :3004/admin, site :3002
+cd website
+docker compose -f deploy/compose.yml up -d                # Postgres only (localhost:5432)
+pnpm dev                                                  # CMS :3004/admin, site :3002
 
 # ...or e-learning (stop the website first)
-docker compose -f elearning/deploy/compose.yml up -d     # Postgres only (localhost:5433)
-pnpm dev:elearning                                       # API :3000, frontend :3003, worker :3005
+cd elearning
+docker compose -f deploy/compose.yml up -d                # Postgres only (localhost:5433)
+pnpm dev                                                  # API :3000, frontend :3003, worker :3005
 ```
 
 - There is deliberately **no command that starts both products**. Stop one (`Ctrl+C` in its terminal, then `docker compose -f <product>/deploy/compose.yml stop`) before starting the other.
@@ -53,17 +55,17 @@ pnpm dev:elearning                                       # API :3000, frontend :
 
 | Setting | Where | Effect |
 | --- | --- | --- |
-| Node heap ceiling 1.5 GB | `.npmrc` (`node-options`) | Every `pnpm run` script's heap stops at about 1.7 GB instead of about 2.2 GB. `npm_config_node_options=...` in the environment overrides it. Not used in Docker image builds or CI. |
+| Node heap ceiling 1.5 GB | each workspace's `.npmrc` (`node-options`) | Every `pnpm run` script's heap stops at about 1.7 GB instead of about 2.2 GB. `npm_config_node_options=...` in the environment overrides it. Not used in Docker image builds or CI. |
 | Two test workers | every package's `vitest.config.ts` | `maxWorkers: 2` locally; CI keeps Vitest's default |
-| Two parallel Turbo tasks | root `test` script | `turbo run test --concurrency=2` |
+| One package at a time | each workspace's `lint` / `typecheck` / `test` / `build` scripts | `pnpm -r --workspace-concurrency=1 run <task>`; there is no Turborepo and no root workspace, so one product's tools never load the other's |
 | ESLint cache | `lint` scripts (`--cache`) | A repeat lint only re-checks changed files |
 | Incremental type checking | `typecheck` scripts / Next.js tsconfigs | A repeat typecheck re-uses the last run |
 | Editor | `.vscode/settings.json` | VS Code skips `node_modules`, `.next`, `dist`, `.turbo` and `coverage` when watching and searching; the TypeScript server is capped at 2 GB |
 
-For checks across the whole repository, run one package at a time:
+Inside each workspace (`website/`, `elearning/`, `legacy/ops/`), the workspace scripts already run one package at a time:
 
 ```bash
-pnpm -r --workspace-concurrency=1 run lint      # likewise typecheck, test, build
+pnpm lint      # = pnpm -r --workspace-concurrency=1 run lint; likewise typecheck, test, build
 ```
 
 ## 5. Check where the memory goes
@@ -74,6 +76,6 @@ pnpm -r --workspace-concurrency=1 run lint      # likewise typecheck, test, buil
 
 ## Known issues
 
-- **First page after `pnpm dev:website` can fail (HTTP 500).** On a cold start the CMS compiles each route on its first request, which can exceed the public site's 10-second timeout for CMS calls. Reload once the CMS has answered (http://localhost:3004/api/ready); later requests take well under a second. Production builds don't compile on request and aren't affected.
+- **First page after `pnpm dev` in `website/` can fail (HTTP 500).** On a cold start the CMS compiles each route on its first request, which can exceed the public site's 10-second timeout for CMS calls. Reload once the CMS has answered (http://localhost:3004/api/ready); later requests take well under a second. Production builds don't compile on request and aren't affected.
 - **Stopping a dev command from a tool or IDE may leave child processes running** on Windows. `Ctrl+C` in the terminal stops them all; otherwise end the leftover `node.exe` processes in Task Manager, or free a port with `netstat -ano | findstr :3002` and `taskkill /PID <pid> /T /F`.
-- **`pnpm db:migrate` and some package scripts call `pnpm` by name.** Run `corepack enable` once so `pnpm` is on your PATH (it modifies your Node installation, so it's your call). `pnpm dev:<product>` and `pnpm db:migrate:<product>` work without it.
+- **`pnpm db:migrate` and some package scripts call `pnpm` by name.** Run `corepack enable` once so `pnpm` is on your PATH (it modifies your Node installation, so it's your call). `pnpm dev` and `pnpm db:migrate` in each workspace work without it.

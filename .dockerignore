@@ -1,0 +1,19 @@
+# Build context is the repository root for every image (pnpm workspace).
+# Keep it small and free of secrets.
+.git
+.github
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/storage
+**/.env
+**/.env.*
+!**/.env.example
+docs
+# Local dev only: the low-memory Node heap ceiling must not apply to image
+# builds; images write their own registry-only .npmrc.
+.npmrc
+**/.eslintcache
+*.log
+*.tgz

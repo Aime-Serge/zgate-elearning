@@ -1,0 +1,345 @@
+{
+  "courseSlugSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "string",
+    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+  },
+  "catalogCohortSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "startsOn": {
+        "type": "string",
+        "format": "date",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+      },
+      "deliveryMode": {
+        "type": "string",
+        "enum": [
+          "online",
+          "onsite",
+          "blended"
+        ]
+      },
+      "seatsRemaining": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "label",
+      "startsOn",
+      "deliveryMode",
+      "seatsRemaining"
+    ],
+    "additionalProperties": false
+  },
+  "catalogItemSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "slug": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "summary": {
+        "type": "string",
+        "maxLength": 1000
+      },
+      "outcomes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "priceAmount": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "currency": {
+        "type": "string",
+        "const": "RWF"
+      },
+      "deliveryMode": {
+        "type": "string",
+        "enum": [
+          "online",
+          "onsite",
+          "blended"
+        ]
+      },
+      "cohorts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "startsOn": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "deliveryMode": {
+              "type": "string",
+              "enum": [
+                "online",
+                "onsite",
+                "blended"
+              ]
+            },
+            "seatsRemaining": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "startsOn",
+            "deliveryMode",
+            "seatsRemaining"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "updatedAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+      }
+    },
+    "required": [
+      "slug",
+      "title",
+      "summary",
+      "outcomes",
+      "priceAmount",
+      "currency",
+      "deliveryMode",
+      "cohorts",
+      "updatedAt"
+    ],
+    "additionalProperties": false
+  },
+  "catalogResponseSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "courses": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "summary": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "outcomes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            },
+            "priceAmount": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "currency": {
+              "type": "string",
+              "const": "RWF"
+            },
+            "deliveryMode": {
+              "type": "string",
+              "enum": [
+                "online",
+                "onsite",
+                "blended"
+              ]
+            },
+            "cohorts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "startsOn": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "deliveryMode": {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "onsite",
+                      "blended"
+                    ]
+                  },
+                  "seatsRemaining": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "label",
+                  "startsOn",
+                  "deliveryMode",
+                  "seatsRemaining"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            }
+          },
+          "required": [
+            "slug",
+            "title",
+            "summary",
+            "outcomes",
+            "priceAmount",
+            "currency",
+            "deliveryMode",
+            "cohorts",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "courses"
+    ],
+    "additionalProperties": false
+  },
+  "enrollLinkParamsSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "slug": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "cohort": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "utm_source": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "utm_medium": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "utm_campaign": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "utm_content": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "utm_term": {
+        "type": "string",
+        "maxLength": 100
+      }
+    },
+    "required": [
+      "slug"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -1,69 +1,76 @@
 # Z-GATE — Developer Guide
 
-**Orientation for a new engineer's first day.** Architecture and plans for the current re-platform live in `docs/platform-v2/`; read its `README.md` first. The product split is recorded in `docs/architecture/ADR/ADR-007-separate-product-backends.md`, and the self-contained layout below in `ADR-008-self-contained-products.md` next to it. On an 8 GB machine, read `docs/DEVELOPMENT_LOW_MEMORY.md` too.
+**Orientation for a new engineer's first day.** Architecture and plans for the current re-platform live in `docs/platform-v2/`; read its `README.md` first. The product split is recorded in `docs/architecture/ADR/ADR-007-separate-product-backends.md`, the self-contained products in `ADR-008-self-contained-products.md`, and the independent workspaces below in `ADR-009-independent-workspaces.md`. On an 8 GB machine, read `docs/DEVELOPMENT_LOW_MEMORY.md` too.
 
-## Repository layout (pnpm workspace + Turborepo)
+## Repository layout (three independent pnpm workspaces)
 
 ```text
-website/                 one self-contained product
+website/                 one self-contained product AND its own pnpm workspace
+  package.json, pnpm-workspace.yaml, pnpm-lock.yaml, .npmrc, .dependency-cruiser.cjs
   frontend/              Next.js public site: reads content from the CMS over REST, no database
   backend/               Payload CMS (headless): admin, REST API, lead intake; migrations in src/migrations
+  packages/              website-contracts (lead webhook schemas), brand-ui (tokens), cms-contracts (website-only)
+  config/                TypeScript/ESLint/Prettier presets + schema-compatibility check
+  tests/contracts/       proves the website works with e-learning's contract
   database/              roles SQL, Postgres configs (prod + small dev), backup.sh / restore.sh
-  deploy/                compose.yml (dev: Postgres; apps under --profile full), compose.prod.yml, env/
-  docs/                  website design (04-WEBSITE.md) and deploy runbook
-elearning/               the other self-contained product, same shape
-  frontend/              Next.js: Z-GATE Academy Online (skeleton)
-  backend/               Fastify + Kysely + PostgreSQL API (the v1 backend)
-    db/migrations/       SQL schema, source of truth (forward-only)
-    scripts/migrate.mjs  the only thing that migrates the e-learning database
-  worker/                background jobs (skeleton)
-  database/  deploy/  docs/
-shared/                  the only code both products may use: config/, ui/, contracts/
-platform/                the only shared runtime: edge/ (Caddyfile), observability/, scripts/ (dev image, dev/migrate helpers)
-legacy/ops/              frozen v1 portal: client portal + staff console (D2), retired later
-docs/                    cross-product docs: platform-v2/ (current plan), architecture/, and every earlier phase's output
+  deploy/                compose.yml (dev: Postgres; apps under --profile full), compose.prod.yml,
+                         edge/ (Caddy, for both products), env/
+  docs/  scripts/        website design and deploy runbook; dev/migrate helpers and dev image
+elearning/               the other product and workspace, same shape
+  frontend/  backend/  worker/
+    backend/db/migrations/       SQL schema, source of truth (forward-only)
+    backend/scripts/migrate.mjs  the only thing that migrates the e-learning database
+  packages/elearning-contracts/  openapi/v1.yaml (public catalog API) + Zod (catalog, enroll links)
+  config/  tests/contracts/  e2e/journeys/  database/  deploy/  docs/  scripts/
+legacy/ops/              frozen v1 portal (client portal + staff console, D2), its own single-package workspace
+docs/                    cross-product docs: platform-v2/ (current plan), architecture/ (ADRs), every earlier phase
+.github/workflows/       website.yml, elearning.yml, legacy.yml (one per workspace), repository.yml (secrets scan),
+                         journey.yml (customer journey on staging), synthetic.yml (production read-only checks)
 ```
 
-Documents written before 2026-10-15 use older paths: `backend/` and `frontend/` (v1), then `apps/learn-api`, `apps/ops` and `apps/website` (briefly `website/app`). These are now `elearning/backend`, `legacy/ops`, and `website/frontend` + `website/backend`; `infra/` became `platform/` plus each product's `deploy/` and `database/`. The `v1-final` git tag preserves the v1 layout.
+There is **no root workspace**: no root `package.json`, lockfile or Turborepo. Run every command inside `website/`, `elearning/` or `legacy/ops/`.
+
+Documents written before 2026-10-15 use older paths: `backend/` and `frontend/` (v1), then `apps/learn-api`, `apps/ops` and `apps/website` (briefly `website/app`). These are now `elearning/backend`, `legacy/ops`, and `website/frontend` + `website/backend`. `infra/` became `platform/` plus each product's `deploy/` and `database/`. On 2026-10-16, `shared/` and `platform/` moved into the products: `shared/ui` to `website/packages/brand-ui`, `shared/contracts` to `elearning/packages/elearning-contracts`, `shared/config` to each product's `config/`, `platform/edge` to `website/deploy/edge`, `platform/scripts` to each product's `scripts/`. The `v1-final` git tag preserves the v1 layout.
 
 ## Product boundaries (enforced)
 
-- `website/` and `elearning/` **never import each other**. Both may import only from `shared/`.
-- `shared/` imports from no product.
+- `website/` and `elearning/` **never import each other's apps**. Each owns a contract package the other uses **only in its `tests/contracts`** (installed as a `file:` dependency): `@zgate/website-contracts` and `@zgate/brand-ui` (website), `@zgate/elearning-contracts` (e-learning). The e-learning frontend may also use `@zgate/brand-ui`.
 - **Nothing** imports from `legacy/`.
-- Inside the website, `website/frontend` imports only `@zgate/website-backend/contracts` from the CMS (HTTP for everything else), and neither the frontend nor the contracts may load Payload at runtime.
+- Inside each workspace: frontends never import backends; `packages/*` and `config/` never import an app; the website frontend uses `@zgate/cms-contracts` instead of the CMS's source and never loads Payload at runtime; `elearning/worker` never imports `elearning/backend` (they share the schema, not code).
 
-`pnpm lint:boundaries` (dependency-cruiser, `.dependency-cruiser.cjs`) checks this, and every CI workflow runs it. `elearning/worker` never imports `elearning/backend` either (they share the schema, not code). Each product has its own Postgres, Compose files and CI workflow; a change under one product doesn't trigger the other's workflow.
+Each workspace's `pnpm lint:boundaries` (dependency-cruiser, its own `.dependency-cruiser.cjs`) checks this, and its CI workflow runs it. Each product has its own Postgres, Compose files and CI workflow. A change under one product doesn't trigger the other's workflow, except that a pull request changing a contract package also runs the other product's contract tests ("Consumer contracts").
 
 ## Get running
 
-**Requirements:** Node.js ≥ 22.12 and corepack (bundled with Node). pnpm itself is pinned by the root `package.json` (`packageManager`), so don't install it globally. Run `corepack enable` once, or prefix commands with `corepack pnpm`.
+**Requirements:** Node.js 22.12 or later and corepack (bundled with Node). pnpm itself is pinned by each workspace's `package.json` (`packageManager`), so don't install it globally. Run `corepack enable` once, or prefix commands with `corepack pnpm`.
 
 **Hybrid mode (the default, and the one for small machines):** each product's Postgres runs in Docker; its apps run natively. One product at a time.
 
 ```bash
-pnpm install
-
 # Website: Postgres on localhost:5432
-docker compose -f website/deploy/compose.yml up -d
-cp website/deploy/env/dev.env.example website/backend/.env
-cp website/deploy/env/dev.env.example website/frontend/.env
-pnpm db:migrate:website            # as the owner role (DATABASE_MIGRATION_URL)
+cd website
+pnpm install
+docker compose -f deploy/compose.yml up -d
+cp deploy/env/dev.env.example backend/.env
+cp deploy/env/dev.env.example frontend/.env
+pnpm db:migrate                    # as the owner role (DATABASE_MIGRATION_URL)
 pnpm --filter @zgate/website-backend seed   # once: the approved copy
-pnpm dev:website                   # CMS http://localhost:3004/admin, site http://localhost:3002
+pnpm dev                           # CMS http://localhost:3004/admin, site http://localhost:3002
 
 # E-learning: Postgres on localhost:5433
-docker compose -f elearning/deploy/compose.yml up -d
-cp elearning/deploy/env/dev.env.example elearning/backend/.env
-pnpm db:migrate:elearning
-pnpm dev:elearning                 # API :3000, frontend :3003, worker :3005/health
+cd ../elearning
+pnpm install
+docker compose -f deploy/compose.yml up -d
+cp deploy/env/dev.env.example backend/.env
+pnpm db:migrate
+pnpm dev                           # API :3000, frontend :3003, worker :3005/health
 ```
 
-- `pnpm dev:<product>` starts only that product's packages. There is deliberately no command that starts both.
-- The apps connect as each database's least-privilege app role; `pnpm db:migrate:<product>` swaps in the owner role from `DATABASE_MIGRATION_URL` (`platform/scripts/migrate.mjs`). Roles, configs and backups: `<product>/database/README.md`.
-- The frozen ops portal: `pnpm --filter @zgate/ops dev` (http://localhost:3001) with the e-learning API running.
+- `pnpm dev` starts only that workspace's apps. There is deliberately no command that starts both products.
+- The apps connect as each database's least-privilege app role; `pnpm db:migrate` swaps in the owner role from `DATABASE_MIGRATION_URL` (`scripts/migrate.mjs`). Roles, configs and backups: `<product>/database/README.md`.
+- The frozen ops portal: `cd legacy/ops && pnpm install && pnpm dev` (http://localhost:3001) with the e-learning API running.
 
-**Everything in containers (heavier):** add `--profile full` (and `--profile legacy` for the ops portal) to a product's `docker compose` command, or use the root `docker-compose.yml`, which includes both products. Containers have memory caps (Postgres 256m, Node services 512m, Next.js apps 1g).
+**Everything in containers (heavier):** add `--profile full` (and `--profile legacy` for the ops portal) to a product's `docker compose` command, or use the root `docker-compose.yml`, which includes both products' Compose files. Containers have memory caps (Postgres 256m, Node services 512m, Next.js apps 1g).
 
 ## Website (`website/frontend` + `website/backend`)
 
@@ -82,7 +89,7 @@ Two apps (ADR-007, second amendment): the **public site** (`website/frontend`, `
   - Content: the frontend reads published documents anonymously over the CMS's REST API (`frontend/src/lib/cms.ts`). It holds no CMS or database credentials.
   - Forms: the frontend posts submissions to `POST /api/lead-intake` with `LEAD_INTAKE_TOKEN` (`backend/src/endpoints/leadIntake.ts`).
   - Cache: on publish the CMS sends an HMAC-signed webhook (`REVALIDATE_SECRET`) to `frontend/src/app/api/revalidate` (`backend/src/hooks/revalidate.ts`).
-  - Shared types and schemas live in `backend/src/contracts/`, the only CMS code the frontend may import.
+  - Shared types and schemas live in `packages/cms-contracts` (content types, webhook signing) and `packages/website-contracts` (lead form and webhook); the frontend never imports the CMS itself.
 - **Rendering:** no public page is built at `next build`, so neither image needs the CMS or a database at build time. Pages render on first visit, stay cached, and refresh automatically when content is published (the webhook above).
 - **Leads** can't be created over the REST API (only through token-guarded lead intake), and every staff read is audit-logged.
 - **Forms (contact, course waitlist)** submit through one server action (`frontend/src/app/(site)/actions.ts`) and work without JavaScript. **They don't appear until a privacy notice page (slug `privacy`) is published.** Until then, pages show phone, WhatsApp and email instead, so no personal data is collected without a notice.
@@ -92,25 +99,22 @@ Two apps (ADR-007, second amendment): the **public site** (`website/frontend`, `
 - **Deploying:** see `website/docs/WEBSITE_DEPLOY.md`.
 - **All public URLs go through `frontend/src/app/(site)/[[...slug]]`** (router: `frontend/src/lib/routes.ts`). Don't add plain routes such as `app/(site)/foo/page.tsx` for CMS content: Next would prerender them at build time, and the build would need the CMS.
 
-## Commands (run from the repo root)
+## Commands (run inside a workspace: `website/`, `elearning/` or `legacy/ops/`)
 
 | Command | What it does |
 |---|---|
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | Runs the task in every package through Turborepo (cached; only what changed) |
-| `pnpm lint:boundaries` | Checks the product import boundaries above |
-| `pnpm dev:website` / `pnpm dev:elearning` | Starts one product's dev servers (never both) |
-| `pnpm db:migrate:website` / `pnpm db:migrate:elearning` | Migrates one product's database as its owner role (local) |
-| `pnpm --filter <pkg> <script>` | Runs one package's script, e.g. `pnpm --filter @zgate/ops dev` |
-| `pnpm db:migrate` | Applies pending e-learning migrations to `DATABASE_URL` as given (CI; takes an advisory lock) |
-| `pnpm format` / `pnpm format:write` | Prettier check / fix (rules: `shared/config/prettier.json`) |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | Runs the task in every package of the workspace, one at a time |
+| `pnpm lint:boundaries` | Checks the import boundaries above (website, e-learning) |
+| `pnpm dev` | Starts the workspace's dev servers |
+| `pnpm db:migrate` | Migrates the workspace's database as its owner role (local) |
+| `pnpm --filter <pkg> <script>` | Runs one package's script. CI migrates e-learning with `pnpm --filter @zgate/elearning-backend db:migrate` (`DATABASE_URL` as given, with an advisory lock) |
+| `pnpm format` / `pnpm format:write` | Prettier check / fix (rules: `config/prettier.json`) |
 
 **Run lint, typecheck, test and build before every commit.** CI runs exactly these.
 
-**Windows note:** Turborepo's Windows binary needs the Microsoft Visual C++ Redistributable (x64). Without it, `pnpm lint` and friends exit with `0xC0000135`. Install the redistributable, or run tasks with `pnpm -r --workspace-concurrency=1 run <task>`, which doesn't need Turbo.
-
 ## Dependencies and supply chain
 
-- `pnpm-workspace.yaml` refuses any package version published less than **14 days** ago (`minimumReleaseAge`). Security fixes may be exempted (`minimumReleaseAgeExclude`), each with a dated comment and removed once the version is old enough.
+- Each workspace's `pnpm-workspace.yaml` refuses any package version published less than **14 days** ago (`minimumReleaseAge`). Security fixes may be exempted (`minimumReleaseAgeExclude`), each with a dated comment and removed once the version is old enough.
 - Transitive security fixes the direct dependency hasn't picked up go in `overrides`, each with its reason and removal condition.
 - Install scripts only run for packages listed in `onlyBuiltDependencies`.
 - Unfixable advisories are accepted explicitly under `auditConfig.ignoreGhsas`, with a reason. CI fails on any other high or critical advisory.
@@ -130,7 +134,7 @@ Vitest everywhere. DB-dependent e-learning API tests run only when `DATABASE_URL
 
 ## Containers
 
-Production Dockerfiles build from the **repository root**: `docker build -f <product>/<app>/Dockerfile .`. Next.js frontends that inline public URLs (`legacy/ops`, `elearning/frontend`) need `--build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=…` and refuse to build without them. The two website images take no build arguments: they read everything at runtime. CI builds and Trivy-scans every image on every PR, and pushes to GHCR only from `main`.
+Production Dockerfiles build with **their workspace as the context**: `docker build -f <workspace>/<app>/Dockerfile <workspace>`, for example `docker build -f website/frontend/Dockerfile website`. Next.js frontends that inline public URLs (`legacy/ops`, `elearning/frontend`) need `--build-arg NEXT_PUBLIC_API_URL=… --build-arg NEXT_PUBLIC_SITE_URL=…` and refuse to build without them. The two website images take no build arguments: they read everything at runtime. CI builds and Trivy-scans every image on every PR, and pushes to GHCR only from `main`.
 
 ## Before you touch production-adjacent code
 

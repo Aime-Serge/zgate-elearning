@@ -1,10 +1,10 @@
 # Z-GATE Academy Online - e-learning frontend (Next.js standalone).
 #
-# Build context is the REPOSITORY ROOT:
+# Build context is the E-LEARNING WORKSPACE ROOT (elearning/):
 #   docker build -f elearning/frontend/Dockerfile \
 #     --build-arg NEXT_PUBLIC_API_URL=https://... \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://... \
-#     -t zgate-elearning-frontend .
+#     -t zgate-elearning-frontend elearning
 #
 # NEXT_PUBLIC_* values are inlined into the client bundle and CSP at build
 # time, so the build refuses to run without them rather than silently
@@ -49,9 +49,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --gid 1001 zgate && useradd --uid 1001 --gid zgate --shell /bin/false zgate
-COPY --from=build --chown=zgate:zgate /repo/elearning/frontend/.next/standalone ./
-COPY --from=build --chown=zgate:zgate /repo/elearning/frontend/.next/static ./elearning/frontend/.next/static
-COPY --from=build --chown=zgate:zgate /repo/elearning/frontend/public ./elearning/frontend/public
+COPY --from=build --chown=zgate:zgate /repo/frontend/.next/standalone ./
+COPY --from=build --chown=zgate:zgate /repo/frontend/.next/static ./frontend/.next/static
+COPY --from=build --chown=zgate:zgate /repo/frontend/public ./frontend/public
 USER zgate
 ENV PORT=3003
 ENV HOSTNAME=0.0.0.0
@@ -60,4 +60,4 @@ EXPOSE 3003
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:3003/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "elearning/frontend/server.js"]
+CMD ["node", "frontend/server.js"]

@@ -5,7 +5,7 @@ import { securityHeaders } from "./src/lib/security-headers";
 
 // pnpm workspace root (two levels up): dependencies live in the root
 // node_modules/.pnpm store, so resolution and standalone tracing start there.
-const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const nextConfig: NextConfig = {
   // Minimal, self-contained server bundle for the production image.
