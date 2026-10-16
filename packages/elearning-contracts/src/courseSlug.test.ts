@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { courseSlugSchema } from "./index.js";
+import { courseSlugSchema } from "./courseSlug.ts";
 
 describe("courseSlugSchema", () => {
   it("accepts the slugs the website already uses", () => {

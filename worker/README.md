@@ -20,13 +20,13 @@ Each arrives with the feature that needs it, as its own module registered in `sr
 
 ## Rules
 
-- May import from `shared/*`. Never from `elearning/backend` source: the worker and the API share the database schema (owned by `elearning/backend/db/migrations`), not code. `pnpm lint:boundaries` enforces this.
+- May import from this workspace's `packages/*`. Never from `elearning/backend` source: the worker and the API share the database schema (owned by `elearning/backend/db/migrations`), not code. `pnpm lint:boundaries` enforces this.
 - Connects as the e-learning app role (`elearning/database/init/01-roles.sql`) once a job needs the database. It never runs migrations.
 
 ## Run
 
 ```bash
-pnpm --filter @zgate/elearning-worker dev     # or: pnpm dev:elearning (API + frontend + worker)
+pnpm --filter @zgate/elearning-worker dev     # or: pnpm dev (API + frontend + worker)
 curl http://localhost:3005/health
-docker build -f elearning/worker/Dockerfile .  # repository root as build context
+docker build -f elearning/worker/Dockerfile elearning  # the workspace as build context
 ```

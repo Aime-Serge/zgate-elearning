@@ -1,5 +1,5 @@
 # Placeholder: endpoints for an external uptime monitor (none chosen yet).
-# Hosts are examples; use the real ones from platform/edge/edge.env.
+# Hosts are examples; use the real ones from website/deploy/edge/edge.env.
 checks:
   - name: website-public
     url: https://www.example.rw/api/ready

@@ -12,7 +12,7 @@ PostgreSQL for the e-learning platform: identity, LMS, commerce, and the v1 oper
 
 ## Roles
 
-- Migrations run as `zgate_elearning_owner` (`DATABASE_MIGRATION_URL`: `pnpm db:migrate:elearning` locally, the `elearning-migrate` job in Compose).
+- Migrations run as `zgate_elearning_owner` (`DATABASE_MIGRATION_URL`: `pnpm db:migrate` in elearning/ locally, the `elearning-migrate` job in Compose).
 - The API and the worker connect as `zgate_elearning_app`: `SELECT`, `INSERT`, `UPDATE`, `DELETE` on tables the owner creates, through default privileges.
 - Restore as the owner role, so restored tables keep the same owner and grants.
 

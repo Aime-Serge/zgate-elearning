@@ -1,0 +1,45 @@
+# The Z-GATE e-learning platform: API, frontend, worker, the packages it
+# owns, its contract tests and its customer-journey tests. Only folders with
+# a package.json are packages, so database/, deploy/ and docs/ are not.
+packages:
+  - "frontend"
+  - "backend"
+  - "worker"
+  - "packages/*"
+  - "config"
+  - "tests/*"
+  - "e2e"
+
+# Supply-chain guard (docs/platform-v2/05-SECURITY-COMPLIANCE.md §5): never
+# resolve a package version published less than 14 days ago. Most
+# malicious releases are caught and pulled within that window.
+minimumReleaseAge: 20160
+
+# Forced versions of transitive dependencies. Each entry: reason, and when
+# to remove it.
+overrides:
+  # Carried over from the old root workspace, where it applied to every
+  # package: jsdom (test environment only) has always resolved undici 7.29.1
+  # here, although it asks for 8.x. Kept so this split changes no resolved
+  # version. Remove in a dependency-update pull request that lets jsdom take
+  # undici 8 and re-runs the tests.
+  undici: 7.29.1
+
+# Advisories with no patched release usable here, reviewed and accepted.
+# Re-check on every dependency update; delete the entry the moment a fix
+# ships.
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 stack-exhaustion DoS via deeply nested patterns. No
+    # fixed version exists. Reached only through lint tooling
+    # (eslint-config-next > fast-glob > micromatch) on the repo's own
+    # trusted glob patterns - never on user input, never in a runtime image.
+    - GHSA-vfj7-8cjw-p6xm
+
+# pnpm does not run dependency install scripts unless they are listed
+# here. Only packages that genuinely need a native build or binary download.
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild
+  - sharp
+  - unrs-resolver

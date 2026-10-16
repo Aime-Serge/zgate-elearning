@@ -1,0 +1,26 @@
+{
+  "name": "@zgate/elearning-workspace",
+  "private": true,
+  "description": "Z-GATE e-learning platform workspace: API (backend/), frontend, worker and the packages it owns (packages/)",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "build": "pnpm -r --workspace-concurrency=1 run build",
+    "lint": "pnpm -r --workspace-concurrency=1 run lint",
+    "typecheck": "pnpm -r --workspace-concurrency=1 run typecheck",
+    "test": "pnpm -r --workspace-concurrency=1 run test",
+    "format": "prettier --check --end-of-line auto .",
+    "format:write": "prettier --write .",
+    "lint:boundaries": "depcruise frontend backend worker packages config tests e2e --config .dependency-cruiser.cjs --output-type err-long"
+  },
+  "devDependencies": {
+    "@zgate/config": "workspace:*",
+    "dependency-cruiser": "18.4.0",
+    "prettier": "3.9.6",
+    "typescript": "^5.9.3"
+  }
+}

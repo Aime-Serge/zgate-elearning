@@ -1,0 +1,156 @@
+openapi: 3.1.0
+info:
+  title: Z-GATE Academy Online - public API
+  version: 0.1.0
+  description: |
+    The e-learning platform's public, unauthenticated API (`/api/v1`). Its
+    first consumer is the Z-GATE website, which renders its course marketing
+    pages from the catalog (docs/platform-v2/02-TARGET-ARCHITECTURE.md §6).
+
+    Rules: `/api/v1` accepts additive changes only. CI fails a pull request
+    on any breaking change to this file (`oasdiff breaking` against main).
+    The Zod schemas in `src/catalog.ts` describe the same payloads and must
+    stay in step with this file (`compat/openapi.test.ts`).
+
+    Contract definition: the API does not serve these endpoints yet.
+  license:
+    name: Proprietary
+servers:
+  - url: https://learn.example.rw
+    description: Production (domain pending decision D4)
+paths:
+  /api/v1/public/catalog:
+    get:
+      operationId: listCatalog
+      summary: Published courses with their upcoming cohorts
+      tags: [catalog]
+      responses:
+        "200":
+          description: Every published course, ordered by title.
+          headers:
+            Cache-Control:
+              description: Public and cacheable; the website revalidates on `course.published`.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogResponse"
+  /api/v1/public/catalog/{slug}:
+    get:
+      operationId: getCatalogItem
+      summary: One published course
+      tags: [catalog]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/CourseSlug"
+      responses:
+        "200":
+          description: The course.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogItem"
+        "404":
+          description: No published course has this slug.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    CourseSlug:
+      type: string
+      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      description: The course join key across products.
+    DeliveryMode:
+      type: string
+      enum: [online, onsite, blended]
+    CatalogCohort:
+      type: object
+      additionalProperties: false
+      required: [id, label, startsOn, deliveryMode, seatsRemaining]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Opaque cohort id; the `cohort` parameter of an enroll link.
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+        startsOn:
+          type: string
+          format: date
+          description: First session (Africa/Kigali calendar date).
+        deliveryMode:
+          $ref: "#/components/schemas/DeliveryMode"
+        seatsRemaining:
+          type: [integer, "null"]
+          minimum: 0
+          description: Null when the cohort has no seat limit.
+    CatalogItem:
+      type: object
+      additionalProperties: false
+      required:
+        [slug, title, summary, outcomes, priceAmount, currency, deliveryMode, cohorts, updatedAt]
+      properties:
+        slug:
+          $ref: "#/components/schemas/CourseSlug"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        summary:
+          type: string
+          maxLength: 1000
+        outcomes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 300
+        priceAmount:
+          type: [integer, "null"]
+          minimum: 0
+          description: Whole Rwandan francs; null for a free course.
+        currency:
+          type: string
+          const: RWF
+        deliveryMode:
+          $ref: "#/components/schemas/DeliveryMode"
+        cohorts:
+          type: array
+          description: Upcoming cohorts, soonest first.
+          items:
+            $ref: "#/components/schemas/CatalogCohort"
+        updatedAt:
+          type: string
+          format: date-time
+    CatalogResponse:
+      type: object
+      additionalProperties: false
+      required: [courses]
+      properties:
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogItem"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            correlationId:
+              type: string

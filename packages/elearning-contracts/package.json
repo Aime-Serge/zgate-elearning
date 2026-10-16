@@ -1,20 +1,19 @@
 {
-  "name": "@zgate/contracts",
+  "name": "@zgate/elearning-contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Zod schemas for the data the website and the e-learning platform exchange",
+  "description": "What the Z-GATE e-learning platform offers other products: the public catalog API (OpenAPI + Zod) and the enroll-link format. Owned by e-learning; the website links it in its contract tests",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts",
+    "./openapi/v1.yaml": "./openapi/v1.yaml"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint --cache .",
     "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/typecheck.tsbuildinfo",
-    "test": "vitest run"
+    "test": "vitest run",
+    "compat:update": "vitest run compat --mode update"
   },
   "dependencies": {
     "zod": "^4.6.1"
@@ -23,6 +22,7 @@
     "@types/node": "^22.20.2",
     "@zgate/config": "workspace:*",
     "eslint": "^9.39.5",
+    "js-yaml": "4.3.2",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"
   }

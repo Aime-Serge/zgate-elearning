@@ -10,7 +10,7 @@
 # host (or a managed in-country service), separate from the website's
 # (elearning/database/README.md - point-in-time recovery required).
 #
-# The edge proxy (platform/edge/Caddyfile, learn. host) runs in the website
+# The edge proxy (website/deploy/edge/Caddyfile, learn. host) runs in the website
 # stack today and reaches these services by name. Before go-live, put Caddy
 # and these services on a shared Docker network, and fix finding N-1 (the
 # API must trust exactly one proxy hop). Until then learn. answers "coming

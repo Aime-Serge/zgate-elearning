@@ -1,0 +1,4 @@
+# Image-scan findings reviewed and accepted (Trivy). Same policy as
+# auditConfig.ignoreGhsas in pnpm-workspace.yaml: each entry has a reason
+# and a removal condition, and is deleted the moment a fix ships.
+# (None today.)

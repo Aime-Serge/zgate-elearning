@@ -1,0 +1,21 @@
+{
+  "name": "@zgate/elearning-journeys",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Customer-journey tests across both products (website course page -> enroll -> LMS -> certificate -> public verification). Run against staging by .github/workflows/journey.yml; the read-only subset (@readonly) runs against production from synthetic.yml",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint --cache .",
+    "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/typecheck.tsbuildinfo",
+    "journey": "playwright test",
+    "journey:readonly": "playwright test --grep @readonly"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.20.2",
+    "@zgate/config": "workspace:*",
+    "@zgate/elearning-contracts": "workspace:*",
+    "eslint": "^9.39.5",
+    "typescript": "^5.9.3"
+  }
+}

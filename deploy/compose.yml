@@ -1,18 +1,19 @@
 # E-learning platform - local development (docs/DEVELOPMENT_LOW_MEMORY.md).
+# Run these from elearning/ (the e-learning workspace).
 #
 # Hybrid mode (default): only the e-learning Postgres runs in Docker; the
-# apps run natively with `pnpm dev:elearning`.
-#   docker compose -f elearning/deploy/compose.yml up -d
+# apps run natively with `pnpm dev`.
+#   docker compose -f deploy/compose.yml up -d
 #     -> Postgres: localhost:5433 (database zgate_elearning)
 #
 # Everything in containers (heavier):
-#   cp elearning/deploy/env/dev.env.example elearning/backend/.env
-#   docker compose -f elearning/deploy/compose.yml --profile full up
+#   cp deploy/env/dev.env.example backend/.env
+#   docker compose -f deploy/compose.yml --profile full up
 #     -> API:      http://localhost:3000   (GET /api/health, /api/ready)
 #     -> frontend: http://localhost:3003
 #     -> worker:   http://localhost:3005/health
 #   ... --profile full --profile legacy up
-#     -> also the frozen ops portal (legacy/ops) on http://localhost:3001
+#     -> also the frozen ops portal (../legacy/ops) on http://localhost:3001
 #
 # Self-contained: this product's own Postgres, volumes and install job;
 # nothing here is shared with the website stack. Paths are relative to this
@@ -22,21 +23,19 @@
 x-node: &node
   profiles: ["full"]
   build:
-    context: ../..
-    dockerfile: platform/scripts/dev.Dockerfile
+    context: ..
+    dockerfile: scripts/dev.Dockerfile
   # Linux dependencies stay in named volumes, never on the host mount. Only
   # the packages elearning-install installs are masked - all of them.
   volumes:
-    - ../..:/repo
+    - ..:/repo
     - elearning_root_node_modules:/repo/node_modules
     - elearning_pnpm_store:/pnpm/store
-    - elearning_backend_node_modules:/repo/elearning/backend/node_modules
-    - elearning_frontend_node_modules:/repo/elearning/frontend/node_modules
-    - elearning_frontend_next:/repo/elearning/frontend/.next
-    - elearning_worker_node_modules:/repo/elearning/worker/node_modules
-    - elearning_shared_config_node_modules:/repo/shared/config/node_modules
-    - elearning_ops_node_modules:/repo/legacy/ops/node_modules
-    - elearning_ops_next:/repo/legacy/ops/.next
+    - elearning_backend_node_modules:/repo/backend/node_modules
+    - elearning_frontend_node_modules:/repo/frontend/node_modules
+    - elearning_frontend_next:/repo/frontend/.next
+    - elearning_worker_node_modules:/repo/worker/node_modules
+    - elearning_config_node_modules:/repo/config/node_modules
 
 services:
   elearning-postgres:
@@ -60,8 +59,7 @@ services:
       retries: 10
     mem_limit: 256m
 
-  # One-shot: install the e-learning packages (and the frozen ops portal,
-  # which talks to this API) before the apps start.
+  # One-shot: install the e-learning packages before the apps start.
   elearning-install:
     <<: *node
     command: >-
@@ -69,11 +67,10 @@ services:
       --filter "@zgate/elearning-backend..."
       --filter "@zgate/elearning-frontend..."
       --filter "@zgate/elearning-worker..."
-      --filter "@zgate/ops..."
     mem_limit: 1g
 
   # The e-learning database is migrated ONLY by this runner
-  # (elearning/backend/scripts/migrate.mjs) - the same one CI, staging and
+  # (backend/scripts/migrate.mjs) - the same one CI, staging and
   # production use - as the owner role, never by Postgres' initdb directory.
   elearning-migrate:
     <<: *node
@@ -136,12 +133,20 @@ services:
       elearning-install:
         condition: service_completed_successfully
 
-  # Frozen v1 operations portal (legacy/ops). Opt-in on top of "full": it
-  # talks to this API, which is still the v1 backend.
+  # Frozen v1 operations portal (../legacy/ops, its own workspace). Opt-in
+  # on top of "full": it talks to this API, which is still the v1 backend.
   ops:
-    <<: *node
     profiles: ["legacy"]
-    command: pnpm --filter @zgate/ops dev
+    build:
+      context: ..
+      dockerfile: scripts/dev.Dockerfile
+    working_dir: /ops
+    command: sh -c "pnpm install --frozen-lockfile && pnpm dev"
+    volumes:
+      - ../../legacy/ops:/ops
+      - elearning_pnpm_store:/pnpm/store
+      - elearning_ops_node_modules:/ops/node_modules
+      - elearning_ops_next:/ops/.next
     environment:
       # Browser-facing values: the browser calls these, so they stay as
       # published host ports, not compose service names.
@@ -152,8 +157,6 @@ services:
       - "127.0.0.1:3001:3001"
     mem_limit: 1g
     depends_on:
-      elearning-install:
-        condition: service_completed_successfully
       elearning-backend:
         condition: service_started
 
@@ -165,6 +168,6 @@ volumes:
   elearning_frontend_node_modules:
   elearning_frontend_next:
   elearning_worker_node_modules:
-  elearning_shared_config_node_modules:
+  elearning_config_node_modules:
   elearning_ops_node_modules:
   elearning_ops_next:

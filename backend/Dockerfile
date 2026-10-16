@@ -1,11 +1,11 @@
 # Z-GATE e-learning API (Fastify + Kysely + PostgreSQL).
 #
-# Build context is the REPOSITORY ROOT (the pnpm lockfile and workspace
-# manifest live there):
-#   docker build -f elearning/backend/Dockerfile -t zgate-learn-api .
+# Build context is the E-LEARNING WORKSPACE ROOT, elearning/ (its pnpm
+# lockfile and workspace manifest live there):
+#   docker build -f elearning/backend/Dockerfile -t zgate-learn-api elearning
 #
-# Production image only. Local development uses platform/scripts/dev.Dockerfile
-# via docker-compose.yml.
+# Production image only. Local development uses scripts/dev.Dockerfile
+# via deploy/compose.yml.
 
 FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
