@@ -1,11 +1,11 @@
 /**
- * Safeguard 3 (elearning/README.md, "Releases"): the full customer journey
+ * Safeguard 3 (README.md, "Releases"): the full customer journey
  * across both products. No production deploy of either product happens
  * unless this passes against staging.
  *
  * Steps that need features not built yet are `test.fixme` with the reason,
  * never deleted or faked. Turn each into a real test when its feature ships
- * (elearning/docs/03-ELEARNING-PLATFORM.md, MVP scope). Steps tagged
+ * (docs/03-ELEARNING-PLATFORM.md, MVP scope). Steps tagged
  * @readonly change nothing and also run against production (synthetic.yml).
  */
 import { enrollLinkSchema } from "@zgate/elearning-contracts";

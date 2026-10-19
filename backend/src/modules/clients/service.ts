@@ -154,7 +154,7 @@ function toDateOnlyString(date: Date): string {
 
 /**
  * The staff-facing client list (FEAT-06.1) - sorted nearest-due-first,
- * always (docs/design/PAGE_SPECIFICATIONS.md: "not user-configurable at
+ * always (website repository, docs/design/PAGE_SPECIFICATIONS.md: "not user-configurable at
  * MVP scale"). Deliberately excludes tin/registeredAddress/contact
  * details - a summary list doesn't need the most sensitive fields
  * (docs/backend/API_CONVENTIONS.md).

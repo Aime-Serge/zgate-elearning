@@ -1,10 +1,11 @@
 # Z-GATE Academy Online - e-learning frontend (Next.js standalone).
 #
-# Build context is the E-LEARNING WORKSPACE ROOT (elearning/):
-#   docker build -f elearning/frontend/Dockerfile \
+# Build context is the REPOSITORY ROOT (its pnpm lockfile and workspace
+# manifest live there):
+#   docker build -f frontend/Dockerfile \
 #     --build-arg NEXT_PUBLIC_API_URL=https://... \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://... \
-#     -t zgate-elearning-frontend elearning
+#     -t zgate-elearning-frontend .
 #
 # NEXT_PUBLIC_* values are inlined into the client bundle and CSP at build
 # time, so the build refuses to run without them rather than silently

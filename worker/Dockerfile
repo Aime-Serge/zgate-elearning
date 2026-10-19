@@ -1,10 +1,10 @@
 # Z-GATE e-learning worker (background jobs).
 #
-# Build context is the E-LEARNING WORKSPACE ROOT, elearning/ (its pnpm
-# lockfile and workspace manifest live there):
-#   docker build -f elearning/worker/Dockerfile -t zgate-elearning-worker elearning
+# Build context is the REPOSITORY ROOT (its pnpm lockfile and workspace
+# manifest live there):
+#   docker build -f worker/Dockerfile -t zgate-elearning-worker .
 #
-# Production image only. Local development: `pnpm dev` in elearning/, or the
+# Production image only. Local development: `pnpm dev`, or the
 # `full` profile of deploy/compose.yml.
 
 FROM node:22-slim AS base
