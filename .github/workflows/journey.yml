@@ -9,9 +9,11 @@ name: Customer journey
 # NO PRODUCTION DEPLOY OF EITHER PRODUCT HAPPENS UNLESS THIS PASSES AGAINST
 # STAGING for the versions being deployed (README.md, "Releases", in this
 # repository and in the website repository). It lives here because the
-# tests do (e2e/journeys); before a website production deploy, run it here
-# against staging and record the run's URL in the deploy log
-# (website repository, docs/WEBSITE_DEPLOY.md).
+# tests do (e2e/journeys). Website releases need it once the website's
+# course buttons link to this platform; until then (this platform is parked)
+# the website gates on its own checks (website repository, ADR-011). When
+# it applies, run it here against staging and record the run's URL in the
+# website's deploy log (website repository, docs/WEBSITE_DEPLOY.md).
 #
 # Staging doesn't exist yet (hosting decision pending). Steps that need
 # features not built yet are `test.fixme` with the reason, so they show as

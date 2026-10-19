@@ -50,14 +50,14 @@ Breaking changes fail before they reach the other product:
 
 1. **Breaking-change checks in the provider.** On every pull request, `oasdiff breaking` compares `packages/elearning-contracts/openapi/v1.yaml` with the base branch's and fails on any breaking change (`/api/v1` accepts additive changes only). `compat/compat.test.ts` fails when a Zod schema removes or renames a field or narrows a type; `compat/openapi.test.ts` keeps OpenAPI and Zod in step. The website repository does the same for its contracts.
 2. **Consumer tests on every snapshot update.** A provider change reaches the consumer only through `node scripts/sync-contracts.mjs --from <other checkout>`, in a pull request in the consumer's repository, where its contract tests run against it. CI rejects a hand-edited `vendor/` (`--check`).
-3. **Customer journey on staging**: `e2e/journeys`, run by `.github/workflows/journey.yml`. It drives both products, so it is the release gate for the website too.
+3. **Customer journey on staging**: `e2e/journeys`, run by `.github/workflows/journey.yml`. It drives both products; website releases are gated by the website's own checks while this platform is parked, and by this journey again once the website's course buttons link here (website repository, ADR-011).
 4. **Production synthetic checks**: the journey's `@readonly` steps every 10 minutes (`.github/workflows/synthetic.yml`), disabled until the production URL variables are set.
 
 **Changing a contract this repository owns:** additive changes only (see `packages/elearning-contracts/README.md`). Once merged, open a pull request in the website repository that syncs the new snapshot, so its contract tests run against it.
 
 ## Releases
 
-**No production deploy of either product happens unless the customer-journey workflow (`.github/workflows/journey.yml`) has passed against staging for the versions being deployed.** The website team runs it here before a website release. Staging doesn't exist yet (hosting decision pending, ADR-004); the journey's unbuilt steps (sign-up, sandbox payment, lesson, certificate, `/verify/[code]`) are `test.fixme` with their reasons until those features ship.
+**No production deploy of either product happens unless the customer-journey workflow (`.github/workflows/journey.yml`) has passed against staging for the versions being deployed.** This platform is **parked** while the website is developed first; website releases are gated by the website's own checks while this platform is parked, and by this journey again once the website's course buttons link here (website repository, ADR-011). Staging doesn't exist yet (hosting decision pending, ADR-004); the journey's unbuilt steps (sign-up, sandbox payment, lesson, certificate, `/verify/[code]`) are `test.fixme` with their reasons until those features ship.
 
 ## Boundaries
 

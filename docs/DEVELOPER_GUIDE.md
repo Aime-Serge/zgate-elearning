@@ -58,7 +58,7 @@ pnpm dev                           # API :3000, frontend :3003, worker :3005/hea
 - **What e-learning owns:** `@zgate/elearning-contracts`, the public catalog API (`/api/v1`, additive changes only, `oasdiff breaking` in CI) and the enroll-link format. After a change merges, open a pull request in the website repository that runs `node scripts/sync-contracts.mjs --from <e-learning checkout>` there, so its contract tests check the new version.
 - **What e-learning consumes:** `@zgate/website-contracts` (lead/waitlist webhook) and `@zgate/brand-ui`, from `vendor/`. To update them: `node scripts/sync-contracts.mjs --from <website checkout>`, `pnpm install`, `pnpm --filter @zgate/elearning-contract-tests test`, then commit `vendor/` in one pull request.
 - `node scripts/sync-contracts.mjs --check` (run by CI) fails if `vendor/` was edited by hand.
-- **The customer journey** (`e2e/journeys`, `journey.yml`) drives both products against staging and is the release gate for both: the website team runs it here before a website release.
+- **The customer journey** (`e2e/journeys`, `journey.yml`) drives both products against staging and is this platform's release gate; website releases are gated by the website's own checks while this platform is parked, and by this journey again once the website's course buttons link here (website repository, ADR-011).
 
 ## Commands
 
