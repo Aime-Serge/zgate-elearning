@@ -3,8 +3,8 @@ name: Legacy
 # The frozen v1 operations portal (legacy/ops). Build-only: it must keep
 # building and its image must stay scanned so it can still be deployed
 # until it is retired (ADR-008), but no new code lands here, so lint,
-# typecheck and tests no longer run. legacy/ops is its own pnpm workspace;
-# this runs only when it changes.
+# typecheck and tests no longer run. legacy/ops is its own pnpm workspace,
+# separate from the e-learning one; this runs only when it changes.
 
 on:
   push:
@@ -78,9 +78,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      # Kept as ghcr.io/<owner>/z-gate-ops whatever this repository is named.
       - name: Compute image name
         id: image
-        run: echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-ops" >> "$GITHUB_OUTPUT"
+        run: echo "name=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/z-gate-ops" >> "$GITHUB_OUTPUT"
 
       # legacy/ops inlines its public URLs at build time (N-2). Published
       # images need real values from repository variables.

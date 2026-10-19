@@ -15,8 +15,8 @@ name: Synthetic monitoring
 # itself. When the domain is live, point an external monitor (for example
 # a self-hosted Uptime Kuma, or a hosted checker) at the same read-only
 # checks - run `pnpm --filter @zgate/elearning-journeys journey:readonly`
-# in elearning/ on its schedule, or reproduce its HTTP checks
-# (elearning/deploy/observability/) - with alerts to the on-call channel,
+# on its schedule, or reproduce its HTTP checks
+# (deploy/observability/) - with alerts to the on-call channel,
 # then delete this workflow.
 
 on:
@@ -37,9 +37,6 @@ jobs:
     if: vars.PRODUCTION_SITE_URL != '' && vars.PRODUCTION_LEARN_URL != ''
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    defaults:
-      run:
-        working-directory: elearning
     env:
       JOURNEY_SITE_URL: ${{ vars.PRODUCTION_SITE_URL }}
       JOURNEY_LEARN_URL: ${{ vars.PRODUCTION_LEARN_URL }}
@@ -53,15 +50,12 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          package_json_file: elearning/package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: pnpm
-          cache-dependency-path: elearning/pnpm-lock.yaml
 
       - name: Install the journey tests
         run: pnpm install --frozen-lockfile --filter "@zgate/elearning-journeys..."
