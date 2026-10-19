@@ -17,3 +17,5 @@ docs
 **/.eslintcache
 *.log
 *.tgz
+# The frozen ops portal builds from its own folder (legacy/ops/Dockerfile).
+legacy

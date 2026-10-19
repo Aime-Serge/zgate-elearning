@@ -1,5 +1,5 @@
 # E-learning platform - local development (docs/DEVELOPMENT_LOW_MEMORY.md).
-# Run these from elearning/ (the e-learning workspace).
+# Run these from the repository root.
 #
 # Hybrid mode (default): only the e-learning Postgres runs in Docker; the
 # apps run natively with `pnpm dev`.
@@ -13,7 +13,7 @@
 #     -> frontend: http://localhost:3003
 #     -> worker:   http://localhost:3005/health
 #   ... --profile full --profile legacy up
-#     -> also the frozen ops portal (../legacy/ops) on http://localhost:3001
+#     -> also the frozen ops portal (legacy/ops) on http://localhost:3001
 #
 # Self-contained: this product's own Postgres, volumes and install job;
 # nothing here is shared with the website stack. Paths are relative to this
@@ -45,7 +45,8 @@ services:
       POSTGRES_PASSWORD: elearning_superuser_dev
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     ports:
-      # 5432 is the website's own Postgres (website/deploy/compose.yml).
+      # 5432 is the website's own Postgres (website repository), so both
+      # products can run on one machine.
       - "127.0.0.1:5433:5432"
     volumes:
       - elearning_pgdata:/var/lib/postgresql/data
@@ -133,7 +134,7 @@ services:
       elearning-install:
         condition: service_completed_successfully
 
-  # Frozen v1 operations portal (../legacy/ops, its own workspace). Opt-in
+  # Frozen v1 operations portal (legacy/ops, its own workspace). Opt-in
   # on top of "full": it talks to this API, which is still the v1 backend.
   ops:
     profiles: ["legacy"]
@@ -143,7 +144,7 @@ services:
     working_dir: /ops
     command: sh -c "pnpm install --frozen-lockfile && pnpm dev"
     volumes:
-      - ../../legacy/ops:/ops
+      - ../legacy/ops:/ops
       - elearning_pnpm_store:/pnpm/store
       - elearning_ops_node_modules:/ops/node_modules
       - elearning_ops_next:/ops/.next
