@@ -1,6 +1,6 @@
 # ADR-009: Independent Workspaces in One Repository
 
-**Status:** Accepted (2026-10-16)
+**Status:** Accepted (2026-10-16). Its "one repository" decision and cross-product CI are superseded by ADR-010 (2026-10-19).
 **Builds on:** ADR-007 (separate products) and ADR-008 (self-contained products). It supersedes ADR-008's shared `shared/` and `platform/` folders and the root pnpm workspace; ADR-008's other decisions stand.
 
 ## Context
