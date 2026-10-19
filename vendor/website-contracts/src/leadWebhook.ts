@@ -7,7 +7,7 @@
  *
  * Contract definition only: the website does not send this webhook yet.
  * The fields mirror what the CMS stores for every lead today
- * (website/backend src/collections/Leads.ts) and the limits match the
+ * (backend src/collections/Leads.ts) and the limits match the
  * lead form (leads/schema.ts), so a stored lead always fits.
  */
 import { z } from "zod";
