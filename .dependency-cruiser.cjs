@@ -7,21 +7,23 @@
  *   packages/*, config/ -X->  any app, tests/, e2e/
  *   elearning-contracts -X->  other workspace packages (other products use it)
  *
- *   anything    -X->  ../website/   the website is another product;
- *   tests/contracts -->  ../website/packages/{website-contracts,brand-ui}/ only
- *   frontend/       -->  ../website/packages/brand-ui/ (the shared brand)
- *   anything    -X->  ../legacy/    the frozen v1 portal is never a dependency
+ *   anything    -X->  vendor/, @zgate/website-*   the website is another
+ *                                     product (another repository);
+ *   tests/contracts -->  @zgate/{website-contracts,brand-ui} only (vendor/:
+ *                                     snapshots of its published contracts)
+ *   frontend/       -->  @zgate/brand-ui (the shared brand)
+ *   anything    -X->  legacy/       the frozen v1 portal is never a dependency
  *
  * Run: pnpm lint:boundaries (CI runs it on every push and pull request).
  *
  * @type {import('dependency-cruiser').IConfiguration}
  */
-// The website, by relative path or as an installed package (a file:
+// The website: its snapshots in vendor/, or the installed packages (a file:
 // dependency is copied into node_modules/.pnpm/@zgate+<name>...).
-const WEBSITE = "^\\.\\./website/|@zgate[/+](website-|cms-contracts|brand-ui)";
+const WEBSITE = "^vendor/|@zgate[/+](website-|cms-contracts|brand-ui)";
 const WEBSITE_CONTRACTS =
-  "^\\.\\./website/packages/(website-contracts|brand-ui)/|@zgate[/+](website-contracts|brand-ui)";
-const WEBSITE_BRAND = "^\\.\\./website/packages/brand-ui/|@zgate[/+]brand-ui";
+  "^vendor/(website-contracts|brand-ui)/|@zgate[/+](website-contracts|brand-ui)";
+const WEBSITE_BRAND = "^vendor/brand-ui/|@zgate[/+]brand-ui";
 
 module.exports = {
   forbidden: [
@@ -53,7 +55,7 @@ module.exports = {
       comment: "legacy/ops is frozen. Nothing may depend on it.",
       severity: "error",
       from: {},
-      to: { path: "^\\.\\./legacy/" },
+      to: { path: "^legacy/" },
     },
     {
       name: "worker-must-not-import-backend",

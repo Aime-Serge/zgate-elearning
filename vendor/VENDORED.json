@@ -1,0 +1,20 @@
+{
+  "source": "the website repository",
+  "packages": {
+    "website-contracts": {
+      "name": "@zgate/website-contracts",
+      "path": "packages/website-contracts",
+      "commit": "ea6ea1df9b657e738add4977cf835bca5315fba2",
+      "tree": "5b64549fd594e8c1ca0b1d9bccc0b347b22e2793",
+      "sha256": "78cd4158a784454039e2505a8fa3a4383bcfd3a3a10e640c93cc137313304469"
+    },
+    "brand-ui": {
+      "name": "@zgate/brand-ui",
+      "path": "packages/brand-ui",
+      "commit": "ea6ea1df9b657e738add4977cf835bca5315fba2",
+      "tree": "71bc6ae12e4b24ca79e6758a9ff0450cd1a0cff4",
+      "sha256": "d94320ddb9af0be2b950d17ba347bfd46b63e4862b2392d5582c85d242591837"
+    }
+  },
+  "syncedAt": "2026-10-19"
+}

@@ -11,9 +11,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.2",
-    "@zgate/brand-ui": "file:../../../website/packages/brand-ui",
+    "@zgate/brand-ui": "file:../../vendor/brand-ui",
     "@zgate/config": "workspace:*",
-    "@zgate/website-contracts": "file:../../../website/packages/website-contracts",
+    "@zgate/website-contracts": "file:../../vendor/website-contracts",
     "eslint": "^9.39.5",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0",

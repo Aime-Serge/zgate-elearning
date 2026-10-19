@@ -1,0 +1,14 @@
+{
+  "name": "@zgate/website-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "What the Z-GATE website sends to other systems: the lead form, lead intake and the lead/waitlist webhook payload (Zod schemas and types). Owned by the website; the e-learning platform links it in its contract tests",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/leads/constants.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.1"
+  }
+}
