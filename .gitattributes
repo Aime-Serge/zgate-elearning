@@ -1,0 +1,26 @@
+# Line endings are decided here, not by each machine's core.autocrlf: LF in
+# the repository and in every checkout, on every OS. Shell scripts and SQL
+# run in Linux containers (database/, deploy/), Prettier and CI expect LF,
+# and commits never churn line endings.
+* text=auto eol=lf
+
+# Binary assets: never converted, never diffed as text.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Collapsed in GitHub's pull-request diffs (still diffable locally).
+pnpm-lock.yaml linguist-generated=true
+legacy/ops/pnpm-lock.yaml linguist-generated=true
+packages/*/compat/published.json linguist-generated=true
+
+# A snapshot of the website repository's contracts (vendor/README.md).
+vendor/** linguist-vendored=true
+docs/** linguist-documentation=true
