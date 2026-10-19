@@ -17,6 +17,8 @@
 >
 > **Revision 4 (2026-10-15):** each product is self-contained: its own Postgres, `database/`, `deploy/` and `docs/` folders, plus an e-learning worker; `platform/` is the only shared runtime ([ADR-008](../architecture/ADR/ADR-008-self-contained-products.md)). The product documents 03 and 04 moved to `elearning/docs/` and `website/docs/`; the links below point there.
 
+> **Revision 5 (2026-10-19):** the two products are now separate repositories, and this set exists in both ([ADR-010](../architecture/ADR/ADR-010-separate-repositories.md)). Product document 04 (website) is in the website repository; paths below are monorepo paths, mapped as ADR-010 §7 describes.
+
 ---
 
 ## 1. The change in direction
@@ -79,8 +81,8 @@ The decisions that matter most:
 |---|---|---|
 | [01](01-CURRENT-STATE-ASSESSMENT.md) | Current-state assessment | What is there, how good it is, criterion by criterion, with evidence |
 | [02](02-TARGET-ARCHITECTURE.md) | Target architecture | Product boundaries, topology, backend contexts, identity, the website → LMS hand-off, technology choices, scale path, residency |
-| [03](../../elearning/docs/03-ELEARNING-PLATFORM.md) | E-learning platform | Roles, MVP / V1 / V2 scope, domain model, payments, low-bandwidth design, certificates, AI readiness, NFRs, KPIs |
-| [04](../../website/docs/04-WEBSITE.md) | Corporate website | IA, CMS model and guardrails, forms and consent, SEO, performance budget, security, accessibility |
+| [03](../03-ELEARNING-PLATFORM.md) | E-learning platform | Roles, MVP / V1 / V2 scope, domain model, payments, low-bandwidth design, certificates, AI readiness, NFRs, KPIs |
+| 04 (website repository, `docs/04-WEBSITE.md`) | Corporate website | IA, CMS model and guardrails, forms and consent, SEO, performance budget, security, accessibility |
 | [05](05-SECURITY-COMPLIANCE.md) | Security and compliance | Fate of every open finding, LMS threat model, ASVS L2 controls, audit design, secure pipeline, Law N° 058/2021 gates |
 | [06](06-DEVOPS-RELIABILITY.md) | DevOps and reliability | Environments, infrastructure, CI/CD, SLOs, resilience patterns, backup/DR, observability, cost |
 | [07](07-MIGRATION-PLAN.md) | Migration plan | Target repo layout, disposition of every v1 part, phased roadmap with effort, decisions, ADRs, risks |

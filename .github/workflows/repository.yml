@@ -1,8 +1,8 @@
 name: Repository
 
 # Checks that cover the whole repository, whatever changed: a secrets scan
-# of the full history. The per-workspace checks live in website.yml,
-# elearning.yml and legacy.yml.
+# of the full history. The build, test and image checks live in
+# the other workflows here.
 #
 # The gitleaks binary is downloaded and checksum-verified (the gitleaks
 # action needs a paid licence for organization repositories).

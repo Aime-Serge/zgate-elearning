@@ -1,7 +1,7 @@
 /**
  * Entry point: the health endpoint plus the job runner. No database
  * connection yet - the first real job brings one (as the e-learning app
- * role, elearning/database/init/01-roles.sql).
+ * role, database/init/01-roles.sql).
  */
 import { createHealthServer } from "./health.js";
 import { jobs } from "./jobs.js";

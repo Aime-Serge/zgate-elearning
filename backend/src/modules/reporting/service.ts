@@ -16,7 +16,7 @@ export interface AdvisorySummary {
   activeClientCount: number;
   /** null when there's no completed item yet to compute a rate from -
    * an honest "no data", not a misleading 0% or 100%
-   * (docs/design/COMPONENT_SPECIFICATION.md's Dashboards states). */
+   * (website repository, docs/design/COMPONENT_SPECIFICATION.md's Dashboards states). */
   onTimeRate: number | null;
 }
 

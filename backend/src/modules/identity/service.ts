@@ -17,7 +17,7 @@ export type CredentialCheckResult =
   // deactivated account (wrong password) - lets the caller audit-log
   // against a real access_log.user_id FK for that case, while still
   // returning the exact same generic error either way
-  // (docs/backend/SECURITY_REQUIREMENTS.md V2: never reveal which of
+  // (docs/security/SECURITY_REQUIREMENTS.md V2: never reveal which of
   // email/password was wrong). Unset when no such account exists at
   // all - there's no valid FK target to log against in that case.
   | { ok: false; matchedUserId?: string };

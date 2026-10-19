@@ -39,7 +39,7 @@ export function registerIdentityRoutes(app: FastifyInstance): void {
   app.post(
     "/api/auth/login",
     // Credential-stuffing target - the platform's highest-blast-radius
-    // single control (docs/architecture/THREAT_MODEL.md §3). Stricter
+    // single control (docs/security/THREAT_MODEL.md §3). Stricter
     // than the app-wide standard default registered in app.ts.
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (request, reply) => {
@@ -53,7 +53,7 @@ export function registerIdentityRoutes(app: FastifyInstance): void {
 
       if (!result.ok) {
         // Never reveals whether the email or the password was wrong
-        // (docs/backend/SECURITY_REQUIREMENTS.md V2) - the HTTP
+        // (docs/security/SECURITY_REQUIREMENTS.md V2) - the HTTP
         // response is identical either way. Audit-logged to access_log
         // only when a real account was matched (wrong password), since
         // that table's user_id FK requires a real row to point at; an

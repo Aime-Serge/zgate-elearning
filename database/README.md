@@ -1,6 +1,6 @@
 # E-learning database
 
-PostgreSQL for the e-learning platform: identity, LMS, commerce, and the v1 operations tables the frozen ops portal still uses. Separate from the website database in every environment, as its own instance in production (ADR-007, ADR-008). The schema lives in `elearning/backend/db/migrations/` and is applied only by `elearning/backend/scripts/migrate.mjs`, never from here.
+PostgreSQL for the e-learning platform: identity, LMS, commerce, and the v1 operations tables the frozen ops portal still uses. Separate from the website database in every environment, as its own instance in production (ADR-007, ADR-008). The schema lives in `backend/db/migrations/` and is applied only by `backend/scripts/migrate.mjs`, never from here.
 
 | File                  | What it is                                                                                                                        |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |

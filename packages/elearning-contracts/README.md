@@ -1,6 +1,6 @@
 # @zgate/elearning-contracts
 
-What the Z-GATE e-learning platform offers other products. Owned by e-learning; the website links it (by path) in its contract tests, `website/tests/contracts`. Its history goes back to `shared/contracts`.
+What the Z-GATE e-learning platform offers other products. Owned by e-learning; the website repository checks itself against a snapshot of it (its `vendor/elearning-contracts`) in its contract tests. Its history goes back to `shared/contracts`.
 
 | Export                                                                                | What it is                                                                                                                |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ What the Z-GATE e-learning platform offers other products. Owned by e-learning; 
 - Schemas and types only, no I/O. Imports no app and no other workspace package (`pnpm lint:boundaries`).
 - **`/api/v1` accepts additive changes only.** CI runs `oasdiff breaking` on `openapi/v1.yaml` against `main` on every pull request and fails on any breaking change.
 - `compat/compat.test.ts` fails when a Zod schema removes or renames a field or narrows a type, compared with `compat/published.json` (the agreed baseline), and `compat/openapi.test.ts` keeps the OpenAPI file and the Zod schemas describing the same fields.
-- A pull request that changes this package also runs the website's contract tests (`.github/workflows/elearning.yml`, job "Consumer contracts").
+- After a change here merges, sync it into the website repository (`node scripts/sync-contracts.mjs --from <e-learning checkout>` there) and run its contract tests in that pull request (README.md, "Contracts").
 
 ## Changing the contract
 

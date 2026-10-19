@@ -18,3 +18,9 @@ packages/*/compat/published.json
 # Caches
 **/.eslintcache
 *.tsbuildinfo
+
+# Snapshot of the other product's contracts, copied verbatim (vendor/README.md).
+vendor/**
+
+# The frozen v1 portal keeps its own formatting (legacy/ops/.prettierrc.json).
+legacy/**

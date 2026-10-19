@@ -1,5 +1,5 @@
 /**
- * Safeguard 1 (elearning/README.md "Contracts"): a schema other products
+ * Safeguard 1 (README.md "Contracts"): a schema other products
  * rely on may not remove or rename a field or narrow a type.
  *
  * published.json is the agreed contract baseline. After an additive change,

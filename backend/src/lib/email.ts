@@ -16,7 +16,7 @@
 export async function sendEmail(to: string, subject: string, text: string): Promise<void> {
   const apiKey = process.env["EMAIL_PROVIDER_API_KEY"];
   // Matches dev.env.example's own placeholder - the real sending domain is
-  // still an open decision (docs/marketing/SEO_STRATEGY.md), never
+  // still an open decision (website repository, docs/marketing/SEO_STRATEGY.md), never
   // guessed at here.
   const from = process.env["EMAIL_FROM_ADDRESS"] ?? "no-reply@example.com";
 

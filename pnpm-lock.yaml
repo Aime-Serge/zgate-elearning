@@ -205,14 +205,14 @@ importers:
         specifier: ^22.20.2
         version: 22.20.4
       '@zgate/brand-ui':
-        specifier: file:../../../website/packages/brand-ui
-        version: file:../website/packages/brand-ui
+        specifier: file:../../vendor/brand-ui
+        version: file:vendor/brand-ui
       '@zgate/config':
         specifier: workspace:*
         version: link:../../config
       '@zgate/website-contracts':
-        specifier: file:../../../website/packages/website-contracts
-        version: file:../website/packages/website-contracts
+        specifier: file:../../vendor/website-contracts
+        version: file:vendor/website-contracts
       eslint:
         specifier: ^9.39.5
         version: 9.39.5
@@ -1261,11 +1261,11 @@ packages:
   '@vitest/spy@5.0.2':
     resolution: {integrity: sha512-Ijc7T1nT9efNb5LxvjaBrEqw3f/QwUv5EE0nKqZxgqsaV/FxAAZ8baGylA8X/Z2oS4Lp+K74Jr6dTJsDKxJDeg==}
 
-  '@zgate/brand-ui@file:../website/packages/brand-ui':
-    resolution: {directory: ../website/packages/brand-ui, type: directory}
+  '@zgate/brand-ui@file:vendor/brand-ui':
+    resolution: {directory: vendor/brand-ui, type: directory}
 
-  '@zgate/website-contracts@file:../website/packages/website-contracts':
-    resolution: {directory: ../website/packages/website-contracts, type: directory}
+  '@zgate/website-contracts@file:vendor/website-contracts':
+    resolution: {directory: vendor/website-contracts, type: directory}
 
   abstract-logging@2.0.1:
     resolution: {integrity: sha512-2BjRTZxTPvheOvGbBslFSYOUkr+SjPtOnrLP33f+VIWLzezQpZcqVg7ja3L4dBXmzzgwT+a029jRx5PCi3JuiA==}
@@ -4080,9 +4080,9 @@ snapshots:
 
   '@vitest/spy@5.0.2': {}
 
-  '@zgate/brand-ui@file:../website/packages/brand-ui': {}
+  '@zgate/brand-ui@file:vendor/brand-ui': {}
 
-  '@zgate/website-contracts@file:../website/packages/website-contracts':
+  '@zgate/website-contracts@file:vendor/website-contracts':
     dependencies:
       zod: 4.6.5
 
@@ -4651,7 +4651,7 @@ snapshots:
       eslint: 9.39.5
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.5))(eslint@9.39.5)
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.5))(eslint@9.39.5))(eslint@9.39.5)
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.5)
       eslint-plugin-react: 7.37.5(eslint@9.39.5)
       eslint-plugin-react-hooks: 7.1.1(eslint@9.39.5)
@@ -4684,7 +4684,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.12.2
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.5))(eslint@9.39.5))(eslint@9.39.5)
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -4698,7 +4698,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.5))(eslint@9.39.5))(eslint@9.39.5):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.2.0

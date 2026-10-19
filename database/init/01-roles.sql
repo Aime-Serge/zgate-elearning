@@ -9,7 +9,7 @@
 -- Local development: Postgres runs this once, when the data volume is first
 -- created (deploy/compose.yml). The passwords below are dev-only throwaway
 -- values. Production: a DBA runs the same statements on the data host with
--- generated passwords (elearning/database/README.md).
+-- generated passwords (database/README.md).
 
 CREATE ROLE zgate_elearning_owner WITH LOGIN PASSWORD 'zgate_elearning_owner_dev';
 CREATE ROLE zgate_elearning_app WITH LOGIN PASSWORD 'zgate_elearning_app_dev';

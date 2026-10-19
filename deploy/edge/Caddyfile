@@ -1,0 +1,53 @@
+# Z-GATE e-learning edge proxy (docs/platform-v2/06-DEVOPS-RELIABILITY.md;
+# ADR-010: each product runs its own edge).
+#
+#   LEARN_HOST  e.g. learn.example.rw - frontend, with the API mounted
+#               under /api/* on the same origin (no CORS, no cross-site
+#               cookies - docs/platform-v2/02-TARGET-ARCHITECTURE.md §3)
+#
+# Caddy obtains and renews TLS certificates automatically (ACME_EMAIL).
+#
+# X-Forwarded-For: Caddy doesn't trust client-supplied forwarding headers
+# (no trusted_proxies configured), so the API receives exactly one entry -
+# the visitor's real address. The API must trust exactly this one hop
+# (finding N-1, below). If a CDN is ever put in front of Caddy, add it to
+# trusted_proxies AND raise the API's trusted hop count to match.
+
+{
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		# Browsers must only ever use HTTPS for these hosts. Add "preload"
+		# only once the production domain is final (decision D4).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+{$LEARN_HOST} {
+	import common
+
+	# Next.js build assets are content-hashed: safe to cache for a year.
+	@immutable path /_next/static/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# BEFORE deploying the API behind this proxy, fix finding N-1: it must
+	# trust exactly this one proxy hop (Fastify `trustProxy`), or its rate
+	# limits apply to all visitors at once
+	# (docs/platform-v2/01-CURRENT-STATE-ASSESSMENT.md).
+	handle /api/* {
+		reverse_proxy elearning-backend:3000
+	}
+	handle {
+		reverse_proxy elearning-frontend:3003
+	}
+
+	# While the services start or are being replaced, a clear holding
+	# answer instead of a bare proxy error.
+	handle_errors 502 503 {
+		respond "Z-GATE Academy Online is coming soon." 503
+	}
+}
