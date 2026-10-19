@@ -17,4 +17,4 @@ pnpm --filter @zgate/elearning-contract-tests test
 
 CI runs `node scripts/sync-contracts.mjs --check`, which fails if anything here differs from the recorded checksum.
 
-The first snapshot (2026-10-19) was taken in the z-gate monorepo before the split (ADR-010); its `commit` is the monorepo's (tag `monorepo-final`). The `tree` ids are unchanged by the split, so `git rev-parse <commit>:packages/<name>` in the website repository finds the same content.
+The first snapshot (2026-10-19) was taken in the z-gate monorepo before the split (ADR-010); its `commit` is in the monorepo's history (an ancestor of tag `monorepo-final`). The `tree` ids are unchanged by the split, so `git rev-parse <commit>:packages/<name>` in the website repository finds the same content.
